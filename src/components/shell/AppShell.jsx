@@ -1,4 +1,5 @@
 import ResultPanel from "../analysis/ResultPanel";
+import ImageryViewer from "../imagery/ImageryViewer";
 import TopBar from "./TopBar";
 import NavigationRail from "./NavigationRail";
 import QueryDock from "../query/QueryDock";
@@ -16,6 +17,7 @@ function AppShell() {
           <section className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_55%)]" />
 
+            <ImageryViewer />
             <SatQueryCore />
             <ResultPanel />
           </section>
