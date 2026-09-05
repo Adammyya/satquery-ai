@@ -6,6 +6,7 @@ const useAnalysisStore = create((set) => ({
   task: null,
   result: null,
   confidence: null,
+  evidence: null,
 
   setQuery: (query) => {
     set({ query });
@@ -27,6 +28,10 @@ const useAnalysisStore = create((set) => ({
     set({ confidence });
   },
 
+  setEvidence: (evidence) => {
+    set({ evidence });
+  },
+
   resetAnalysis: () => {
     set({
       query: "",
@@ -34,6 +39,7 @@ const useAnalysisStore = create((set) => ({
       task: null,
       result: null,
       confidence: null,
+      evidence: null,
     });
   },
 }));

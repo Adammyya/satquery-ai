@@ -11,6 +11,7 @@ function QueryDock() {
   const setTask = useAnalysisStore((state) => state.setTask);
   const setResult = useAnalysisStore((state) => state.setResult);
   const setConfidence = useAnalysisStore((state) => state.setConfidence);
+  const setEvidence = useAnalysisStore((state) => state.setEvidence);
 
   const handleEvent = (event) => {
     switch (event.type) {
@@ -40,8 +41,9 @@ function QueryDock() {
         break;
 
       case "evidence_ready":
-        setStatus("evidence");
-        break;
+  setEvidence(event.evidence);
+  setStatus("evidence");
+  break;
 
       case "result":
         setResult(event.result);
