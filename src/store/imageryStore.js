@@ -1,7 +1,16 @@
 import { create } from "zustand";
 
+const demoImagery = {
+  id: "nasa-demo-001",
+  source: "NASA Earthdata",
+  filename: "earthdata.jpeg",
+  assetUrl: "/imagery/earthdata.jpeg",
+  acquisitionDate: "2021-09-30",
+  modality: "optical",
+};
+
 const useImageryStore = create((set) => ({
-  image: null,
+  image: demoImagery,
   metadata: null,
   overlays: [],
   isLoading: false,
