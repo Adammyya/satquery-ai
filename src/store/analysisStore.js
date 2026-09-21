@@ -7,6 +7,7 @@ const useAnalysisStore = create((set) => ({
   result: null,
   confidence: null,
   evidence: null,
+  executionTrace: [],
 
   setQuery: (query) => {
     set({ query });
@@ -32,6 +33,12 @@ const useAnalysisStore = create((set) => ({
     set({ evidence });
   },
 
+  addTraceEvent: (event) => {
+    set((state) => ({
+      executionTrace: [...state.executionTrace, event],
+    }));
+  },
+
   resetAnalysis: () => {
     set({
       query: "",
@@ -40,6 +47,7 @@ const useAnalysisStore = create((set) => ({
       result: null,
       confidence: null,
       evidence: null,
+      executionTrace: [],
     });
   },
 }));

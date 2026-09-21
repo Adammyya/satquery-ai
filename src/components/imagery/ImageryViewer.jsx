@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import useImageryStore from "../../store/imageryStore";
 
 function ImageryViewer() {
@@ -6,8 +6,42 @@ function ImageryViewer() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const resetView = () => {
+  setZoom(1);
+  setPan({ x: 0, y: 0 });
+};
+const fileInputRef = useRef(null);
+
+const handleUpload = (event) => {
+  const file = event.target.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  if (!file.type.startsWith("image/")) {
+    return;
+  }
+
+  const assetUrl = URL.createObjectURL(file);
+
+  setImage({
+    id: `upload-${Date.now()}`,
+    source: "LOCAL UPLOAD",
+    filename: file.name,
+    assetUrl,
+    acquisitionDate: null,
+    modality: "unknown",
+  });
+
+  setZoom(1);
+  setPan({ x: 0, y: 0 });
+
+  event.target.value = "";
+};
 
   const image = useImageryStore((state) => state.image);
+const setImage = useImageryStore((state) => state.setImage);
 
   const handleMouseDown = (event) => {
     if (zoom === 1) {
@@ -72,6 +106,21 @@ function ImageryViewer() {
       />
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(11,11,12,0.5),transparent_30%)]" />
+      <input
+  ref={fileInputRef}
+  type="file"
+  accept=".jpg,.jpeg,.png,.webp"
+  onChange={handleUpload}
+  className="hidden"
+/>
+
+<button
+  type="button"
+  onClick={() => fileInputRef.current?.click()}
+  className="absolute right-5 top-5 z-10 rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-[9px] tracking-[0.2em] text-white/60 backdrop-blur-md transition-colors hover:border-amber-400/30 hover:text-white"
+>
+  UPLOAD IMAGERY
+</button>
 
       <div className="pointer-events-none absolute left-5 top-5 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
         <p className="text-[9px] tracking-[0.25em] text-white/40">
@@ -108,6 +157,16 @@ function ImageryViewer() {
         >
           −
         </button>
+        <div className="w-px bg-white/10" />
+
+<button
+  type="button"
+  onClick={resetView}
+  className="px-3 py-2 text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+  title="Reset view"
+>
+  ↺
+</button>
       </div>
     </div>
   );

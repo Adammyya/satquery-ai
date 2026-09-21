@@ -1,4 +1,5 @@
 import ResultPanel from "../analysis/ResultPanel";
+import AnalysisTrace from "../analysis/AnalysisTrace";
 import ImageryViewer from "../imagery/ImageryViewer";
 import TopBar from "./TopBar";
 import NavigationRail from "./NavigationRail";
@@ -20,6 +21,7 @@ function AppShell() {
             <ImageryViewer />
             <SatQueryCore />
             <ResultPanel />
+            <AnalysisTrace />
           </section>
 
           <QueryDock />
