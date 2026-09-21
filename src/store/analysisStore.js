@@ -38,6 +38,9 @@ const useAnalysisStore = create((set) => ({
       executionTrace: [...state.executionTrace, event],
     }));
   },
+  clearExecutionTrace: () => {
+  set({ executionTrace: [] });
+},
 
   resetAnalysis: () => {
     set({

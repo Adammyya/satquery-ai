@@ -5,6 +5,8 @@ import TopBar from "./TopBar";
 import NavigationRail from "./NavigationRail";
 import QueryDock from "../query/QueryDock";
 import SatQueryCore from "../core/SatQueryCore";
+import TemporalComparison from "../analysis/TemporalComparison";
+import MultimodalComparison from "../analysis/MultimodalComparison";
 
 function AppShell() {
   return (
@@ -22,6 +24,8 @@ function AppShell() {
             <SatQueryCore />
             <ResultPanel />
             <AnalysisTrace />
+            <TemporalComparison />
+            <MultimodalComparison />
           </section>
 
           <QueryDock />

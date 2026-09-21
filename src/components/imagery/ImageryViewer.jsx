@@ -42,6 +42,7 @@ const handleUpload = (event) => {
 
   const image = useImageryStore((state) => state.image);
 const setImage = useImageryStore((state) => state.setImage);
+const overlays = useImageryStore((state) => state.overlays);
 
   const handleMouseDown = (event) => {
     if (zoom === 1) {
@@ -104,6 +105,43 @@ const setImage = useImageryStore((state) => state.setImage);
         }}
         draggable={false}
       />
+      {overlays.map((overlay, index) => {
+  if (
+    overlay.type !== "bounding_box" &&
+    overlay.type !== "change_region"
+  ) {
+    return null;
+  }
+
+  const isChangeRegion = overlay.type === "change_region";
+
+  return (
+    <div
+      key={`${overlay.type}-${index}`}
+      className={`pointer-events-none absolute z-10 border ${
+        isChangeRegion
+          ? "border-cyan-300/80 bg-cyan-300/[0.10] shadow-[0_0_30px_rgba(103,232,249,0.12)]"
+          : "border-amber-400/80 bg-amber-400/[0.08] shadow-[0_0_30px_rgba(251,191,36,0.12)]"
+      }`}
+      style={{
+        left: `${overlay.x}%`,
+        top: `${overlay.y}%`,
+        width: `${overlay.width}%`,
+        height: `${overlay.height}%`,
+      }}
+    >
+      <div
+        className={`absolute -top-6 left-0 whitespace-nowrap rounded-md border bg-black/75 px-2 py-1 text-[8px] tracking-[0.15em] backdrop-blur-md ${
+          isChangeRegion
+            ? "border-cyan-300/30 text-cyan-200"
+            : "border-amber-400/30 text-amber-300"
+        }`}
+      >
+        {overlay.label}
+      </div>
+    </div>
+  );
+})}
 
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(11,11,12,0.5),transparent_30%)]" />
       <input

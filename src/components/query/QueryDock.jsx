@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useAnalysisStore from "../../store/analysisStore";
+import useImageryStore from "../../store/imageryStore";
 import { analyzeQuery } from "../../services/api/queryApi";
 import { runMockAnalysis } from "../../services/websocket/analysisSocket";
 
@@ -41,9 +42,14 @@ function QueryDock() {
   const setResult = useAnalysisStore((state) => state.setResult);
   const setConfidence = useAnalysisStore((state) => state.setConfidence);
   const setEvidence = useAnalysisStore((state) => state.setEvidence);
+  const setOverlays = useImageryStore((state) => state.setOverlays);
   const addTraceEvent = useAnalysisStore(
     (state) => state.addTraceEvent
   );
+  const clearExecutionTrace = useAnalysisStore(
+  (state) => state.clearExecutionTrace
+);
+  
 
   const isProcessing = processingStates.includes(status);
 
@@ -111,15 +117,21 @@ function QueryDock() {
         break;
 
       case "evidence_ready":
-        setEvidence(event.evidence);
-        setStatus("evidence");
+  setEvidence(event.evidence);
 
-        addTraceEvent({
-          type: "success",
-          label: "EVIDENCE READY",
-          detail: "Analytical evidence collected",
-        });
-        break;
+  if (event.evidence?.overlay) {
+    setOverlays([event.evidence.overlay]);
+  }
+
+  setStatus("evidence");
+
+  addTraceEvent({
+    type: "success",
+    label: "EVIDENCE READY",
+    detail: "Analytical evidence collected",
+  });
+  break;
+
 
       case "result":
         setResult(event.result);
@@ -149,7 +161,8 @@ function QueryDock() {
     }
 
     setQuery(query);
-
+    setOverlays([]);
+    clearExecutionTrace();
     setStatus("understanding");
 
     try {
