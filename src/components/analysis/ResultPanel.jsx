@@ -1,5 +1,6 @@
 import { useState } from "react";
 import useAnalysisStore from "../../store/analysisStore";
+import ReportButton from "./ReportButton";
 
 function ResultPanel() {
   const [showEvidence, setShowEvidence] = useState(false);
@@ -61,6 +62,7 @@ function ResultPanel() {
       >
         {showEvidence ? "HIDE EVIDENCE" : "WHY THIS ANSWER"}
       </button>
+      <ReportButton />
 
       {showEvidence && evidence && (
         <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-4">
