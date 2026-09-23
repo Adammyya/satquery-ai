@@ -42,14 +42,16 @@ function QueryDock() {
   const setResult = useAnalysisStore((state) => state.setResult);
   const setConfidence = useAnalysisStore((state) => state.setConfidence);
   const setEvidence = useAnalysisStore((state) => state.setEvidence);
+
   const setOverlays = useImageryStore((state) => state.setOverlays);
+
   const addTraceEvent = useAnalysisStore(
     (state) => state.addTraceEvent
   );
+
   const clearExecutionTrace = useAnalysisStore(
-  (state) => state.clearExecutionTrace
-);
-  
+    (state) => state.clearExecutionTrace
+  );
 
   const isProcessing = processingStates.includes(status);
 
@@ -64,6 +66,7 @@ function QueryDock() {
           label: "TASK DETECTED",
           detail: event.task.replaceAll("_", " "),
         });
+
         break;
 
       case "input_validated":
@@ -74,6 +77,7 @@ function QueryDock() {
           label: "INPUT VALIDATED",
           detail: "Imagery and query are compatible",
         });
+
         break;
 
       case "workflow_selected":
@@ -84,6 +88,7 @@ function QueryDock() {
           label: "WORKFLOW SELECTED",
           detail: event.workflow.replaceAll("_", " "),
         });
+
         break;
 
       case "agent_started":
@@ -94,6 +99,7 @@ function QueryDock() {
           label: "AGENT STARTED",
           detail: event.agent,
         });
+
         break;
 
       case "processing":
@@ -104,6 +110,7 @@ function QueryDock() {
           label: "PROCESSING",
           detail: `Analysis progress ${event.progress}%`,
         });
+
         break;
 
       case "agent_completed":
@@ -114,24 +121,25 @@ function QueryDock() {
           label: "AGENT COMPLETED",
           detail: event.agent,
         });
+
         break;
 
       case "evidence_ready":
-  setEvidence(event.evidence);
+        setEvidence(event.evidence);
 
-  if (event.evidence?.overlay) {
-    setOverlays([event.evidence.overlay]);
-  }
+        if (event.evidence?.overlay) {
+          setOverlays([event.evidence.overlay]);
+        }
 
-  setStatus("evidence");
+        setStatus("evidence");
 
-  addTraceEvent({
-    type: "success",
-    label: "EVIDENCE READY",
-    detail: "Analytical evidence collected",
-  });
-  break;
+        addTraceEvent({
+          type: "success",
+          label: "EVIDENCE READY",
+          detail: "Analytical evidence collected",
+        });
 
+        break;
 
       case "result":
         setResult(event.result);
@@ -142,6 +150,7 @@ function QueryDock() {
           label: "RESULT GENERATED",
           detail: "Explainable analysis result ready",
         });
+
         break;
 
       case "complete":
