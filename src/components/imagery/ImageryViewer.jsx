@@ -6,12 +6,12 @@ function ImageryViewer() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [uploadError, setUploadError] = useState("");
   const resetView = () => {
   setZoom(1);
   setPan({ x: 0, y: 0 });
 };
 const fileInputRef = useRef(null);
-
 const handleUpload = (event) => {
   const file = event.target.files?.[0];
 
@@ -19,7 +19,25 @@ const handleUpload = (event) => {
     return;
   }
 
-  if (!file.type.startsWith("image/")) {
+  setUploadError("");
+
+  const supportedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
+  const maxFileSize = 25 * 1024 * 1024;
+
+  if (!supportedTypes.includes(file.type)) {
+    setUploadError("Unsupported format. Use JPG, PNG, or WebP.");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > maxFileSize) {
+    setUploadError("File is too large. Maximum size is 25 MB.");
+    event.target.value = "";
     return;
   }
 
@@ -147,10 +165,15 @@ const overlays = useImageryStore((state) => state.overlays);
       <input
   ref={fileInputRef}
   type="file"
-  accept=".jpg,.jpeg,.png,.webp"
+  accept="image/jpeg,image/png,image/webp"
   onChange={handleUpload}
   className="hidden"
 />
+{uploadError && (
+  <div className="absolute right-5 top-[4.5rem] z-10 max-w-xs rounded-lg border border-red-400/20 bg-black/80 px-3 py-2 text-[9px] tracking-[0.08em] text-red-300 backdrop-blur-md">
+    {uploadError}
+  </div>
+)}
 
 <button
   type="button"
@@ -159,16 +182,37 @@ const overlays = useImageryStore((state) => state.overlays);
 >
   UPLOAD IMAGERY
 </button>
+<div className="pointer-events-none absolute left-5 top-5 z-10 rounded-lg border border-white/10 bg-black/55 px-3 py-2.5 backdrop-blur-md">
+  <p className="text-[9px] tracking-[0.25em] text-white/40">
+    EARTH OBSERVATION
+  </p>
 
-      <div className="pointer-events-none absolute left-5 top-5 rounded-lg border border-white/10 bg-black/50 px-3 py-2 backdrop-blur-md">
-        <p className="text-[9px] tracking-[0.25em] text-white/40">
-          EARTH OBSERVATION
-        </p>
+  <p className="mt-1 text-xs text-white/80">
+    {image.source}
+  </p>
 
-        <p className="mt-1 text-xs text-white/70">
-          {image.source}
-        </p>
-      </div>
+  <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+    <p className="text-[8px] tracking-[0.08em] text-white/35">
+      FILE <span className="text-white/55">{image.filename}</span>
+    </p>
+
+    <p className="text-[8px] tracking-[0.08em] text-white/35">
+      MODALITY{" "}
+      <span className="text-white/55">
+        {image.modality || "UNKNOWN"}
+      </span>
+    </p>
+
+    {image.acquisitionDate && (
+      <p className="text-[8px] tracking-[0.08em] text-white/35">
+        ACQUIRED{" "}
+        <span className="text-white/55">
+          {image.acquisitionDate}
+        </span>
+      </p>
+    )}
+  </div>
+</div>
 
       <div
         className="absolute bottom-5 right-5 z-10 flex overflow-hidden rounded-lg border border-white/10 bg-black/60 backdrop-blur-md"
@@ -196,6 +240,11 @@ const overlays = useImageryStore((state) => state.overlays);
           −
         </button>
         <div className="w-px bg-white/10" />
+        <div className="px-3 py-2 text-[9px] tracking-[0.12em] text-white/40">
+  {Math.round(zoom * 100)}%
+</div>
+
+<div className="w-px bg-white/10" />
 
 <button
   type="button"
