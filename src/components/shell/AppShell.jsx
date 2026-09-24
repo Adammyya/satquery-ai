@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import WorkflowVisualizer from "../analysis/WorkflowVisualizer";
 import ResultPanel from "../analysis/ResultPanel";
 import AnalysisTrace from "../analysis/AnalysisTrace";
 import ImageryViewer from "../imagery/ImageryViewer";
@@ -68,6 +68,8 @@ function AppShell() {
             </div>
 
             <AnalysisTrace />
+            <WorkflowVisualizer />
+            
           </section>
 
           <div
