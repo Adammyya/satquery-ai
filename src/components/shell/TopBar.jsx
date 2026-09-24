@@ -1,4 +1,4 @@
-function TopBar() {
+function TopBar({ onHistoryClick, onSettingsClick }) {
   return (
     <header className="flex h-16 items-center justify-between border-b border-white/10 bg-[#0b0b0c] px-6">
       <div>
@@ -17,11 +17,19 @@ function TopBar() {
           SYSTEM READY
         </div>
 
-        <button className="text-xs text-white/45 transition-colors hover:text-white">
+        <button
+          type="button"
+          onClick={onHistoryClick}
+          className="text-xs text-white/45 transition-colors hover:text-white"
+        >
           HISTORY
         </button>
 
-        <button className="text-xs text-white/45 transition-colors hover:text-white">
+        <button
+          type="button"
+          onClick={onSettingsClick}
+          className="text-xs text-white/45 transition-colors hover:text-white"
+        >
           SETTINGS
         </button>
       </div>

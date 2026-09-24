@@ -8,6 +8,11 @@ const useAnalysisStore = create((set) => ({
   confidence: null,
   evidence: null,
   executionTrace: [],
+  history: [],
+
+  // Display settings
+  showTrace: true,
+  showConfidence: true,
 
   setQuery: (query) => {
     set({ query });
@@ -33,14 +38,36 @@ const useAnalysisStore = create((set) => ({
     set({ evidence });
   },
 
+  setShowTrace: (showTrace) => {
+    set({ showTrace });
+  },
+
+  setShowConfidence: (showConfidence) => {
+    set({ showConfidence });
+  },
+
   addTraceEvent: (event) => {
     set((state) => ({
       executionTrace: [...state.executionTrace, event],
     }));
   },
+
+  addHistoryEntry: (entry) => {
+    set((state) => ({
+      history: [
+        {
+          id: Date.now(),
+          timestamp: new Date().toISOString(),
+          ...entry,
+        },
+        ...state.history,
+      ].slice(0, 20),
+    }));
+  },
+
   clearExecutionTrace: () => {
-  set({ executionTrace: [] });
-},
+    set({ executionTrace: [] });
+  },
 
   resetAnalysis: () => {
     set({

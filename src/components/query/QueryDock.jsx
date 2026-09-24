@@ -48,6 +48,9 @@ function QueryDock() {
   const addTraceEvent = useAnalysisStore(
     (state) => state.addTraceEvent
   );
+  const addHistoryEntry = useAnalysisStore(
+  (state) => state.addHistoryEntry
+);
 
   const clearExecutionTrace = useAnalysisStore(
     (state) => state.clearExecutionTrace
@@ -55,7 +58,8 @@ function QueryDock() {
 
   const isProcessing = processingStates.includes(status);
 
-  const handleEvent = (event) => {
+  const handleEvent = (event, currentQuery) => { 
+
     switch (event.type) {
       case "task_detected":
         setTask(event.task);
@@ -144,6 +148,12 @@ function QueryDock() {
       case "result":
         setResult(event.result);
         setConfidence(event.result.confidence);
+        addHistoryEntry({
+  query: currentQuery,
+  task: event.result.task,
+  answer: event.result.answer,
+  confidence: event.result.confidence,
+});
 
         addTraceEvent({
           type: "success",
@@ -178,10 +188,10 @@ function QueryDock() {
       const analysis = await analyzeQuery(query);
 
       await runMockAnalysis({
-        query,
-        analysis,
-        onEvent: handleEvent,
-      });
+  query,
+  analysis,
+  onEvent: (event) => handleEvent(event, query),
+});
     } catch (error) {
       console.error("Analysis failed:", error);
       setStatus("error");
