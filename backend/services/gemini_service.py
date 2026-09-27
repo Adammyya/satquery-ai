@@ -20,21 +20,27 @@ def call_gemini(
     image_bytes: bytes,
     mime_type: str,
 ) -> dict:
-    CORE_INSTRUCTIONS = """
-CRITICAL ANSWERING RULES - READ CAREFULLY:
-1. DIRECT ANSWER: You MUST prioritize answering the USER'S SPECIFIC QUESTION directly. DO NOT start with a generic description or caption of the entire image unless the user explicitly asks for a "description" or "what do you see".
-2. STRUCTURE: Your 'answer' must follow this exact order:
-   A) DIRECT ANSWER (Start with a direct Yes/No or specific answer to the question).
-   B) SHORT OBSERVATION (1-2 sentences of supporting evidence from the image).
-   C) LIMITATION (If uncertain or if the image resolution/data is insufficient to be 100% sure, clearly state what CANNOT be confirmed).
-3. TARGET AUDIENCE: The answer must be clear, direct, and simple (aimed at farmers or non-technical users). Avoid unnecessary GIS jargon, or explain it simply if required (e.g. use "green areas" instead of "high spectral heterogeneity"). Keep answers concise (2-5 sentences).
-4. NO HALLUCINATION: Only state what is VISIBLE in the image. If asked about "disease", "crop health", "exact water quality", or "flood risk", and the image alone isn't enough, you MUST state that it cannot be confirmed from this single image without more data/resolution.
-5. LANGUAGE MATCHING: You MUST analyze the language and style of the user's query and write the 'answer' field in the EXACT same language and style.
-   - If query is English, answer in English.
-   - If query is Hinglish (e.g., 'Is image mein...'), answer in natural Hinglish. DO NOT translate into formal Hindi.
-   - If query is Hindi, answer in Hindi.
-   - Preserve technical remote-sensing terms (SAR, NDVI, vegetation, crop, water body) in English.
-NOTE: Only apply these rules to the text meant for the user in the 'answer' or 'evidence' field. Do NOT translate JSON keys.
+    # Detect language cue from the query to inject into the prompt
+    query_lower = user_prompt.lower()
+    if any(word in query_lower for word in ["mein", "hai", "kya", "kaisi", "kaisa", "yahan", "pe", "hain", "nahi", "kuch", "bahut", "zyada", "dekh", "dikh"]):
+        lang_instruction = "The user's query is in Hinglish (Hindi-English mix). You MUST write your 'answer' field in natural Hinglish — the same style as the user's question. Do NOT switch to formal English."
+    elif any(ord(c) > 0x0900 and ord(c) < 0x097F for c in user_prompt):
+        lang_instruction = "The user's query is in Hindi (Devanagari script). You MUST write your 'answer' field in Hindi."
+    else:
+        lang_instruction = "The user's query is in English. Write your 'answer' field in clear English."
+
+    CORE_INSTRUCTIONS = f"""
+LANGUAGE RULE (HIGHEST PRIORITY):
+{lang_instruction}
+The 'answer' field language MUST match the user query language exactly. Do NOT translate the user's language. Do NOT default to English if the query is not English. Technical terms (SAR, NDVI, vegetation, RGB, temporal) may remain in English regardless of query language.
+
+CRITICAL ANSWERING RULES:
+1. DIRECT ANSWER: Answer the USER'S SPECIFIC QUESTION directly. Do NOT give a generic image description unless the user explicitly asks to "describe the image" or "what do you see".
+2. STRUCTURE: answer = (A) Direct Yes/No or specific answer → (B) 1-2 sentences of visual evidence → (C) limitation if uncertain.
+3. FARMER-FRIENDLY: Simple, clear, practical. Avoid jargon or explain it simply.
+4. NO HALLUCINATION: Only state what is VISIBLE. If you cannot confirm crop disease, flood risk, exact coordinates etc. from this single image, say so clearly in the SAME language as the query.
+5. CONCISE: 2-5 sentences in the 'answer' field.
+NOTE: Apply language and content rules only to 'answer' and 'evidence.description' fields. Do NOT translate JSON keys.
 """
     system_prompt = system_prompt + "\n" + CORE_INSTRUCTIONS
 

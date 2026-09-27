@@ -99,63 +99,65 @@ function WorkflowVisualizer() {
           </span>
         </div>
 
-        <div className="flex items-start">
-          {stages.map((stage, index) => {
-            const state = getStageState(stage.key);
+        <div className="overflow-x-auto">
+          <div className="flex items-start" style={{ minWidth: `${stages.length * 72}px` }}>
+            {stages.map((stage, index) => {
+              const state = getStageState(stage.key);
 
-            return (
-              <div
-                key={stage.key}
-                className="flex min-w-0 flex-1 items-start"
-              >
-                <div className="flex min-w-0 flex-col items-center">
-                  <div
-                    className={`flex h-5 w-5 items-center justify-center rounded-full border text-[7px] transition-all duration-500 ${
-                      state === "active"
-                        ? "border-amber-300/70 bg-amber-300/10 text-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.18)]"
-                        : state === "complete"
-                          ? "border-cyan-300/40 bg-cyan-300/[0.06] text-cyan-200"
-                          : state === "error"
-                            ? "border-red-300/50 bg-red-300/[0.06] text-red-200"
-                            : "border-white/10 bg-white/[0.02] text-white/20"
-                    }`}
-                  >
-                    {state === "complete" ? "✓" : index + 1}
-                  </div>
-
-                  <p
-                    className={`mt-2 truncate text-[8px] tracking-[0.14em] transition-colors duration-500 ${
-                      state === "active"
-                        ? "text-amber-200"
-                        : state === "complete"
-                          ? "text-cyan-200/70"
-                          : state === "error"
-                            ? "text-red-200"
-                            : "text-white/25"
-                    }`}
-                  >
-                    {stage.label}
-                  </p>
-
-                  <p className="mt-1 hidden text-[7px] text-white/20 sm:block">
-                    {stage.detail}
-                  </p>
-                </div>
-
-                {index < stages.length - 1 && (
-                  <div className="mx-2 mt-3.5 h-px flex-1 bg-white/10">
+              return (
+                <div
+                  key={stage.key}
+                  className="flex min-w-0 flex-1 items-start"
+                >
+                  <div className="flex min-w-0 flex-col items-center w-full">
                     <div
-                      className={`h-full origin-left transition-all duration-700 ${
-                        getStageState(stages[index + 1].key) !== "pending"
-                          ? "scale-x-100 bg-cyan-300/40"
-                          : "scale-x-0 bg-transparent"
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[7px] transition-all duration-500 ${
+                        state === "active"
+                          ? "border-amber-300/70 bg-amber-300/10 text-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.18)]"
+                          : state === "complete"
+                            ? "border-cyan-300/40 bg-cyan-300/[0.06] text-cyan-200"
+                            : state === "error"
+                              ? "border-red-300/50 bg-red-300/[0.06] text-red-200"
+                              : "border-white/10 bg-white/[0.02] text-white/20"
                       }`}
-                    />
+                    >
+                      {state === "complete" ? "✓" : index + 1}
+                    </div>
+
+                    <p
+                      className={`mt-2 w-full text-center break-words text-[7.5px] leading-tight tracking-[0.1em] transition-colors duration-500 ${
+                        state === "active"
+                          ? "text-amber-200"
+                          : state === "complete"
+                            ? "text-cyan-200/70"
+                            : state === "error"
+                              ? "text-red-200"
+                              : "text-white/25"
+                      }`}
+                    >
+                      {stage.label}
+                    </p>
+
+                    <p className="mt-1 hidden text-[7px] text-white/20 sm:block text-center">
+                      {stage.detail}
+                    </p>
                   </div>
-                )}
-              </div>
-            );
-          })}
+
+                  {index < stages.length - 1 && (
+                    <div className="mx-1 mt-3.5 h-px flex-1 shrink-0 bg-white/10" style={{ minWidth: "8px" }}>
+                      <div
+                        className={`h-full origin-left transition-all duration-700 ${
+                          getStageState(stages[index + 1].key) !== "pending"
+                            ? "scale-x-100 bg-cyan-300/40"
+                            : "scale-x-0 bg-transparent"
+                        }`}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
