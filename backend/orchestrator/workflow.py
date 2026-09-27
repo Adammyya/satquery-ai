@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from backend.orchestrator.router import route_task
-from backend.agents.vqa_agent import run_vqa
-from backend.services.gemini_service import GEMINI_MODEL
+from orchestrator.router import route_task
+from agents.vqa_agent import run_vqa
+from services.gemini_service import GEMINI_MODEL
 
 class WorkflowContext:
     def __init__(self, query: str, image_filename: str):
@@ -34,13 +34,13 @@ def execute_workflow(query: str, image_bytes: bytes, mime_type: str, image_filen
 
         if agent_target == "grounding_agent":
             ctx.log_event("MODEL ANALYSIS", f"Executing analytical evaluation via {GEMINI_MODEL}")
-            from backend.agents.grounding_agent import run_grounding
+            from agents.grounding_agent import run_grounding
             result = run_grounding(query, image_bytes, mime_type, image_filename)
             task_name = "spatial_grounding"
             workflow_name = "Spatial Feature Grounding"
         elif agent_target == "temporal_change_agent":
             ctx.log_event("TEMPORAL ALIGNMENT", "Verifying multi-temporal observation pairs")
-            from backend.agents.temporal_agent import run_temporal
+            from agents.temporal_agent import run_temporal
             result = run_temporal(query, image_bytes, mime_type, image_filename)
             task_name = "temporal_change_detection"
             workflow_name = "Temporal Difference Analysis"
@@ -48,14 +48,14 @@ def execute_workflow(query: str, image_bytes: bytes, mime_type: str, image_filen
         elif agent_target == "optical_sar_agent":
             ctx.log_event("OPTICAL ANALYSIS", "Extracting visual spectral features")
             ctx.log_event("SAR ANALYSIS", "Awaiting active microwave backscatter data")
-            from backend.agents.optical_sar_agent import run_optical_sar
+            from agents.optical_sar_agent import run_optical_sar
             result = run_optical_sar(query, image_bytes, mime_type, image_filename)
             task_name = "multimodal_analysis"
             workflow_name = "Optical-SAR Fusion"
             ctx.log_event("MULTIMODAL FUSION", "Attempting cross-sensor correlation")
         else:
             ctx.log_event("MODEL ANALYSIS", f"Executing analytical evaluation via {GEMINI_MODEL}")
-            from backend.agents.vqa_agent import run_vqa
+            from agents.vqa_agent import run_vqa
             result = run_vqa(query, image_bytes, mime_type, image_filename)
             task_name = "satellite_vqa" if agent_target == "vqa_agent" else "scene_description"
             workflow_name = "Single Image VQA"

@@ -3,8 +3,8 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from backend.schemas.analysis import AnalysisResponse, Query
-from backend.orchestrator.workflow import execute_workflow
+from schemas.analysis import AnalysisResponse, Query
+from orchestrator.workflow import execute_workflow
 
 load_dotenv()
 

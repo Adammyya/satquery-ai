@@ -1,4 +1,4 @@
-from backend.services.gemini_service import call_gemini
+from services.gemini_service import call_gemini
 
 SYSTEM_PROMPT = """You are SatQuery AI, a specialized scientific remote-sensing intelligence engine.
 Your role is to attempt spatial localization of features within Earth observation satellite imagery.

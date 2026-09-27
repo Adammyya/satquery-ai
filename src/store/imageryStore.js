@@ -7,6 +7,7 @@ const demoImagery = {
   assetUrl: "/imagery/earthdata.jpeg",
   acquisitionDate: "2021-09-30",
   modality: "optical",
+  file: null,
 };
 
 const useImageryStore = create((set) => ({

@@ -1,28 +1,13 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = "https://satquery-ai-1-ap5j.onrender.com";
 
-export async function analyzeQuery(query, image) {
-  if (!image?.assetUrl) {
-    throw new Error("No imagery is available for analysis.");
+export async function analyzeQuery(query, imageFile) {
+  if (!imageFile) {
+    throw new Error("Please upload a satellite image before analyzing.");
   }
-
-  const imageResponse = await fetch(image.assetUrl);
-
-  if (!imageResponse.ok) {
-    throw new Error(
-      `Could not load imagery: ${imageResponse.status}`
-    );
-  }
-
-  const imageBlob = await imageResponse.blob();
 
   const formData = new FormData();
   formData.append("query", query);
-  formData.append(
-    "image",
-    imageBlob,
-    image.filename || "satquery-image.jpeg"
-  );
+  formData.append("image", imageFile);
 
   const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
     method: "POST",
@@ -30,35 +15,33 @@ export async function analyzeQuery(query, image) {
   });
 
   if (!response.ok) {
-    let detail = `Backend request failed: ${response.status}`;
+    let message = `Backend request failed: ${response.status}`;
 
     try {
       const errorData = await response.json();
-
       if (errorData.detail) {
-        detail = errorData.detail;
-      }
+        
+    typeof errorData.detail === "string"
+      ? errorData.detail
+      : JSON.stringify(errorData.detail);
+}
     } catch {
       // Keep the default error message.
     }
 
-    throw new Error(detail);
+    throw new Error(message);
   }
 
   const data = await response.json();
 
   return {
     task: data.task,
-    workflow: data.workflow || data.task,
     answer: data.answer,
     confidence: data.confidence,
-    uncertainty: data.uncertainty,
-    evidence: data.evidence,
-    trace_events: data.trace_events || [],
-    execution: data.execution || {
-      model: data.model || "SatQuery Backend",
-      workflow: data.workflow || data.task,
+    evidence: data.evidence ?? null,
+    execution: data.execution ?? {
+      model: "SatQuery AI",
+      workflow: data.task,
     },
-    image: data.image,
   };
 }
