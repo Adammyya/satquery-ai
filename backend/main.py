@@ -1,26 +1,37 @@
 import time
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from sqlalchemy.orm import Session
+from typing import Optional
 
 from schemas.analysis import AnalysisResponse, Query
 from orchestrator.workflow import execute_workflow
 
+import models
+from database import engine, get_db
+from routers.auth import router as auth_router, get_current_user
+
 load_dotenv()
+
+# Create tables
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SatQuery AI Backend", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://satquery-ai-one-zeta.vercel.app",
-],
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://satquery-ai-one-zeta.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 
 @app.get("/")
 def home():
@@ -42,6 +53,8 @@ def analyze(data: Query):
 async def ai_analyze(
     query: str = Form(...),
     image: UploadFile = File(...),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db)
 ):
     start_time = time.time()
     try:
@@ -61,6 +74,28 @@ async def ai_analyze(
             "filename": image.filename,
             "mime_type": mime_type,
         }
+
+        # Try to identify user if token is passed
+        current_user = None
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.split(" ")[1]
+            try:
+                current_user = get_current_user(token=token, db=db)
+            except HTTPException:
+                pass # If token is invalid, just proceed without saving to a user
+
+        if current_user:
+            db_analysis = models.Analysis(
+                user_id=current_user.id,
+                query=query,
+                task=result.get("task", ""),
+                workflow=result.get("execution", {}).get("workflow_type", ""),
+                answer=result.get("answer", ""),
+                confidence=result.get("confidence", 0.0),
+                image_filename=image.filename
+            )
+            db.add(db_analysis)
+            db.commit()
         
         return result
 
@@ -71,3 +106,8 @@ async def ai_analyze(
             status_code=503,
             detail=f"SatQuery engine analysis unavailable: {str(exc)}",
         )
+
+@app.get("/api/history")
+def get_history(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    analyses = db.query(models.Analysis).filter(models.Analysis.user_id == current_user.id).order_by(models.Analysis.created_at.desc()).all()
+    return analyses

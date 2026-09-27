@@ -4,3 +4,9 @@ python-multipart
 google-genai
 python-dotenv
 pydantic
+sqlalchemy
+psycopg2-binary
+passlib
+bcrypt
+python-jose[cryptography]
+email-validator

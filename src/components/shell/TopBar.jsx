@@ -1,4 +1,8 @@
+import { useAuthStore } from "../../store/authStore";
+
 function TopBar({ onHistoryClick, onSettingsClick }) {
+  const { user, logout } = useAuthStore();
+
   return (
     <header className="flex h-16 items-center justify-between border-b border-white/10 bg-[#0b0b0c] px-6">
       <div>
@@ -16,6 +20,29 @@ function TopBar({ onHistoryClick, onSettingsClick }) {
           <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
           SYSTEM READY
         </div>
+
+        {user ? (
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-amber-400">
+              {user.name}
+            </span>
+            <button
+              type="button"
+              onClick={logout}
+              className="text-xs text-white/45 transition-colors hover:text-white"
+            >
+              LOGOUT
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-auth-modal'))}
+            className="text-xs text-white/45 transition-colors hover:text-white"
+          >
+            LOGIN
+          </button>
+        )}
 
         <button
           type="button"

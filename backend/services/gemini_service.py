@@ -19,6 +19,16 @@ def call_gemini(
     image_bytes: bytes,
     mime_type: str,
 ) -> dict:
+    language_rule = """
+IMPORTANT LANGUAGE RULE: You must analyze the language and style of the user's query and write the 'answer' field in the EXACT same language and style.
+- If query is English, answer in English.
+- If query is Hinglish (e.g., 'Is image mein...'), answer in natural Hinglish.
+- If query is Hindi, answer in Hindi.
+- Preserve technical remote-sensing terms (SAR, NDVI, vegetation, etc.) in English.
+NOTE: Only translate the text meant for the user in the answer or evidence. Do NOT translate JSON keys.
+"""
+    system_prompt = system_prompt + "\n" + language_rule
+
 
     max_attempts = 3
 

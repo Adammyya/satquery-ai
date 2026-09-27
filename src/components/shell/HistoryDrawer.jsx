@@ -1,7 +1,38 @@
+import { useEffect, useState } from "react";
 import useAnalysisStore from "../../store/analysisStore";
+import { useAuthStore } from "../../store/authStore";
+import { fetchUserHistory } from "../../services/api/authApi";
 
 function HistoryDrawer({ onClose }) {
-  const history = useAnalysisStore((state) => state.history);
+  const localHistory = useAnalysisStore((state) => state.history);
+  const { user, token } = useAuthStore();
+  const [remoteHistory, setRemoteHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && token) {
+      setLoading(true);
+      fetchUserHistory(token)
+        .then(data => {
+          // data has {id, query, task, workflow, answer, confidence, created_at}
+          const formatted = data.map(item => ({
+            id: item.id,
+            query: item.query,
+            task: item.task,
+            workflow: item.workflow,
+            answer: item.answer,
+            confidence: item.confidence,
+            timestamp: new Date(item.created_at).getTime(),
+          }));
+          setRemoteHistory(formatted);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  }, [user, token]);
+
+  const history = user ? remoteHistory : localHistory;
+
   const setQuery = useAnalysisStore((state) => state.setQuery);
   const setTask = useAnalysisStore((state) => state.setTask);
   const setWorkflow = useAnalysisStore((state) => state.setWorkflow);
@@ -90,7 +121,9 @@ function HistoryDrawer({ onClose }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
-          {history.length === 0 ? (
+          {loading ? (
+             <div className="flex h-full items-center justify-center text-xs text-white/50">Loading history...</div>
+          ) : history.length === 0 ? (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/[0.02] text-white/20 text-lg">
@@ -102,7 +135,7 @@ function HistoryDrawer({ onClose }) {
                 </p>
 
                 <p className="mt-2 max-w-[220px] text-xs leading-5 text-white/30">
-                  Completed remote-sensing analyses will appear here during this session.
+                  Completed remote-sensing analyses will appear here.
                 </p>
               </div>
             </div>
@@ -144,7 +177,7 @@ function HistoryDrawer({ onClose }) {
 
         <div className="border-t border-white/10 px-5 py-3 bg-white/[0.01]">
           <p className="text-[8px] leading-4 tracking-[0.1em] text-white/25 font-mono">
-            SESSION HISTORY · {history.length} SAVED ANALYSES
+            {user ? "ACCOUNT HISTORY" : "SESSION HISTORY"} · {history.length} SAVED ANALYSES
           </p>
         </div>
       </aside>

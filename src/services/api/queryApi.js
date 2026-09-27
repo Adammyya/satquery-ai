@@ -44,8 +44,18 @@ export async function analyzeQuery(query, image) {
   formData.append("query", query.trim());
   formData.append("image", imageFile);
 
-  const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
+  const token = localStorage.getItem("satquery_token");
+  const headers = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Allow override via env variable, fallback to original Render URL
+  const baseURL = import.meta.env.VITE_API_URL || API_BASE_URL;
+
+  const response = await fetch(`${baseURL}/ai/analyze`, {
     method: "POST",
+    headers,
     body: formData,
   });
 

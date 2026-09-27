@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import WorkflowVisualizer from "../analysis/WorkflowVisualizer";
 import ResultPanel from "../analysis/ResultPanel";
 import AnalysisTrace from "../analysis/AnalysisTrace";
@@ -11,11 +11,23 @@ import TemporalComparison from "../analysis/TemporalComparison";
 import MultimodalComparison from "../analysis/MultimodalComparison";
 import HistoryDrawer from "./HistoryDrawer";
 import SettingsDrawer from "./SettingsDrawer";
+import AuthModal from "../auth/AuthModal";
+import { useAuthStore } from "../../store/authStore";
 
 function AppShell() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("workspace");
+  const { fetchUser } = useAuthStore();
+
+  useEffect(() => {
+    fetchUser();
+    
+    const openAuth = () => setAuthOpen(true);
+    window.addEventListener('open-auth-modal', openAuth);
+    return () => window.removeEventListener('open-auth-modal', openAuth);
+  }, [fetchUser]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#0b0b0c] text-white">
@@ -87,6 +99,10 @@ function AppShell() {
 
       {settingsOpen && (
         <SettingsDrawer onClose={() => setSettingsOpen(false)} />
+      )}
+
+      {authOpen && (
+        <AuthModal onClose={() => setAuthOpen(false)} />
       )}
     </div>
   );
