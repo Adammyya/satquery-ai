@@ -1,7 +1,8 @@
 const API_BASE_URL = "https://satquery-ai-1-ap5j.onrender.com";
 
 function getBaseUrl() {
-  return import.meta.env.VITE_API_URL || API_BASE_URL;
+  const url = import.meta.env.VITE_API_URL || API_BASE_URL;
+  return url.replace(/\/+$/, "");
 }
 
 // ── Login ────────────────────────────────────────────────────────────────────
@@ -12,12 +13,18 @@ export async function loginUser(email, password) {
     body: JSON.stringify({ email, password }),
   });
 
-  const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.detail || "Login failed.");
+    let errorMessage = `Login failed (${response.status}).`;
+    try {
+      const data = await response.json();
+      if (data.detail) errorMessage = typeof data.detail === "string" ? data.detail : data.detail[0]?.msg || errorMessage;
+    } catch {
+      // Not JSON
+    }
+    throw new Error(errorMessage);
   }
-  // Returns { access_token, token_type, user: { id, name, email } }
-  return data;
+  
+  return response.json();
 }
 
 // ── Register ─────────────────────────────────────────────────────────────────
@@ -28,12 +35,18 @@ export async function registerUser(name, email, password) {
     body: JSON.stringify({ name, email, password }),
   });
 
-  const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.detail || "Registration failed.");
+    let errorMessage = `Registration failed (${response.status}).`;
+    try {
+      const data = await response.json();
+      if (data.detail) errorMessage = typeof data.detail === "string" ? data.detail : data.detail[0]?.msg || errorMessage;
+    } catch {
+      // Not JSON
+    }
+    throw new Error(errorMessage);
   }
-  // Returns { access_token, token_type, user: { id, name, email } }
-  return data;
+  
+  return response.json();
 }
 
 // ── Me ───────────────────────────────────────────────────────────────────────

@@ -51,7 +51,8 @@ export async function analyzeQuery(query, image) {
   }
 
   // Allow override via env variable, fallback to original Render URL
-  const baseURL = import.meta.env.VITE_API_URL || API_BASE_URL;
+  let baseURL = import.meta.env.VITE_API_URL || API_BASE_URL;
+  baseURL = baseURL.replace(/\/+$/, "");
 
   const response = await fetch(`${baseURL}/ai/analyze`, {
     method: "POST",
