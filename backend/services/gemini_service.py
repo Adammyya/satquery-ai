@@ -9,7 +9,7 @@ from google.genai import types
 load_dotenv()
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-1.5-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.0-flash")
 
 client = genai.Client()
 
@@ -81,23 +81,28 @@ NOTE: Only apply these rules to the text meant for the user in the 'answer' or '
         except Exception as exc:
             error_text = str(exc)
 
+            # Model not found — wrong name, wrong API version, or not enabled on this key.
+            # Never retry; surface a clear message immediately.
+            if "404" in error_text or "NOT_FOUND" in error_text:
+                raise Exception(
+                    f"GEMINI_MODEL_NOT_FOUND: '{current_model}' is not available "
+                    "for this API key / version. Set a valid GEMINI_MODEL in Render env vars."
+                ) from exc
+
             if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text:
                 if current_model == GEMINI_MODEL and GEMINI_FALLBACK_MODEL:
-                    # Switch to fallback model immediately and try again
+                    # Switch to fallback model immediately — no sleep, no retry count spent
                     current_model = GEMINI_FALLBACK_MODEL
                     continue
                 else:
-                    # If we already tried fallback or there is no fallback, fail.
+                    # Fallback also exhausted (or no fallback configured)
                     raise Exception("GEMINI_QUOTA_EXHAUSTED") from exc
 
-            # Retry transient Gemini availability failures.
-            is_transient = (
-                "503" in error_text
-                or "UNAVAILABLE" in error_text
-            )
+            # Retry only genuinely transient server errors
+            is_transient = "503" in error_text or "UNAVAILABLE" in error_text
 
             if not is_transient or attempt == max_attempts:
                 raise
 
-            # Exponential backoff: 2s, then 4s.
+            # Exponential backoff: 2 s, then 4 s
             time.sleep(2 ** attempt)
