@@ -18,7 +18,10 @@ function ResultPanel() {
     return null;
   }
 
-  const confidencePercentage = Math.round((confidence ?? 0) * 100);
+  const isInputRequired = confidence == null;
+  const confidenceDisplay = isInputRequired ? "N/A" : `${Math.round(confidence * 100)}%`;
+  const statusLabel = isInputRequired ? "INPUT REQUIRED" : "ANALYSIS COMPLETE";
+  const statusColor = isInputRequired ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.45)]" : "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.45)]";
 
   const taskLabel = task
     ? task.replaceAll("_", " ").toUpperCase()
@@ -33,10 +36,10 @@ function ResultPanel() {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.45)]" />
+            <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
 
-            <p className="text-[9px] tracking-[0.3em] text-white/40 font-mono">
-              ANALYSIS COMPLETE
+            <p className="text-[9px] tracking-[0.3em] text-white/40 font-mono uppercase">
+              {statusLabel}
             </p>
           </div>
 
@@ -52,18 +55,18 @@ function ResultPanel() {
             </p>
 
             <p className="mt-0.5 text-sm font-semibold text-amber-300">
-              {confidencePercentage}%
+              {confidenceDisplay}
             </p>
           </div>
         )}
       </div>
 
       {/* Confidence bar */}
-      {showConfidence && (
+      {showConfidence && !isInputRequired && (
         <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-white/5">
           <div
             className="h-full rounded-full bg-amber-300/80 transition-all duration-700"
-            style={{ width: `${confidencePercentage}%` }}
+            style={{ width: `${Math.round(confidence * 100)}%` }}
           />
         </div>
       )}
