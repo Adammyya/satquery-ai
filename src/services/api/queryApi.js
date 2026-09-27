@@ -1,18 +1,49 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-export async function analyzeQuery(query) {
-  const response = await fetch(`${API_BASE_URL}/analyze`, {
+export async function analyzeQuery(query, image) {
+  if (!image?.assetUrl) {
+    throw new Error("No imagery is available for analysis.");
+  }
+
+  const imageResponse = await fetch(image.assetUrl);
+
+  if (!imageResponse.ok) {
+    throw new Error(
+      `Could not load imagery: ${imageResponse.status}`
+    );
+  }
+
+  const imageBlob = await imageResponse.blob();
+
+  const formData = new FormData();
+
+  formData.append("query", query);
+
+  formData.append(
+    "image",
+    imageBlob,
+    image.filename || "satquery-image.jpeg"
+  );
+
+  const response = await fetch(`${API_BASE_URL}/ai/analyze`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query,
-    }),
+    body: formData,
   });
 
   if (!response.ok) {
-    throw new Error(`Backend request failed: ${response.status}`);
+    let detail = `Backend request failed: ${response.status}`;
+
+    try {
+      const errorData = await response.json();
+
+      if (errorData.detail) {
+        detail = errorData.detail;
+      }
+    } catch {
+      // Keep the default error message.
+    }
+
+    throw new Error(detail);
   }
 
   const data = await response.json();
@@ -23,7 +54,7 @@ export async function analyzeQuery(query) {
     confidence: data.confidence,
     evidence: null,
     execution: {
-      model: "SatQuery Backend",
+      model: data.model || "SatQuery Backend",
       workflow: data.task,
     },
   };

@@ -25,7 +25,9 @@ function ResultPanel() {
     result.execution?.workflow?.replaceAll("_", " ") || "Analysis workflow";
 
   return (
-    <div className="absolute right-6 top-6 z-20 w-[340px] max-w-[calc(100vw-3rem)] rounded-2xl border border-white/10 bg-[#0b0b0c]/95 p-5 shadow-2xl backdrop-blur-xl">
+    <div
+      className="absolute right-6 top-6 z-20 w-[320px] max-h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-[#0b0b0c]/90 p-5 shadow-2xl backdrop-blur-xl"
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">

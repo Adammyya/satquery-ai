@@ -2,7 +2,7 @@ import { useState } from "react";
 import useAnalysisStore from "../../store/analysisStore";
 import useImageryStore from "../../store/imageryStore";
 import { analyzeQuery } from "../../services/api/queryApi";
-import { runMockAnalysis } from "../../services/websocket/analysisSocket";
+
 
 const suggestedQueries = [
   {
@@ -44,6 +44,7 @@ function QueryDock() {
   const setEvidence = useAnalysisStore((state) => state.setEvidence);
 
   const setOverlays = useImageryStore((state) => state.setOverlays);
+  const image = useImageryStore((state) => state.image);
 
   const addTraceEvent = useAnalysisStore(
     (state) => state.addTraceEvent
@@ -171,32 +172,82 @@ function QueryDock() {
         break;
     }
   };
-
   const handleAnalyze = async () => {
-    const query = input.trim();
+  const query = input.trim();
 
-    if (!query || isProcessing) {
-      return;
-    }
+  if (!query || isProcessing) {
+    return;
+  }
 
-    setQuery(query);
-    setOverlays([]);
-    clearExecutionTrace();
-    setStatus("understanding");
+  if (!image?.assetUrl) {
+    console.error("No imagery available for analysis.");
+    setStatus("error");
+    return;
+  }
 
-    try {
-      const analysis = await analyzeQuery(query);
+  setQuery(query);
+  setOverlays([]);
+  clearExecutionTrace();
+  setStatus("understanding");
 
-      await runMockAnalysis({
-  query,
-  analysis,
-  onEvent: (event) => handleEvent(event, query),
-});
-    } catch (error) {
-      console.error("Analysis failed:", error);
-      setStatus("error");
-    }
-  };
+  addTraceEvent({
+    type: "processing",
+    label: "QUERY SUBMITTED",
+    detail: "Sending query and imagery to SatQuery AI",
+  });
+
+  try {
+    const analysis = await analyzeQuery(query, image);
+
+    handleEvent(
+      {
+        type: "task_detected",
+        task: analysis.task,
+      },
+      query
+    );
+
+    handleEvent(
+      {
+        type: "input_validated",
+      },
+      query
+    );
+
+    handleEvent(
+      {
+        type: "workflow_selected",
+        workflow: analysis.task,
+      },
+      query
+    );
+
+    handleEvent(
+      {
+        type: "result",
+        result: analysis,
+      },
+      query
+    );
+
+    handleEvent(
+      {
+        type: "complete",
+      },
+      query
+    );
+  } catch (error) {
+    console.error("Analysis failed:", error);
+
+    addTraceEvent({
+      type: "error",
+      label: "ANALYSIS FAILED",
+      detail: error.message || "Backend analysis failed",
+    });
+
+    setStatus("error");
+  }
+};
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
