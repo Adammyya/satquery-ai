@@ -4,8 +4,10 @@ const useAnalysisStore = create((set) => ({
   query: "",
   status: "idle",
   task: null,
+  workflow: null,
   result: null,
   confidence: null,
+  uncertainty: null,
   evidence: null,
   executionTrace: [],
   history: [],
@@ -26,12 +28,20 @@ const useAnalysisStore = create((set) => ({
     set({ task });
   },
 
+  setWorkflow: (workflow) => {
+    set({ workflow });
+  },
+
   setResult: (result) => {
     set({ result });
   },
 
   setConfidence: (confidence) => {
     set({ confidence });
+  },
+
+  setUncertainty: (uncertainty) => {
+    set({ uncertainty });
   },
 
   setEvidence: (evidence) => {
@@ -44,6 +54,10 @@ const useAnalysisStore = create((set) => ({
 
   setShowConfidence: (showConfidence) => {
     set({ showConfidence });
+  },
+
+  setExecutionTrace: (executionTrace) => {
+    set({ executionTrace });
   },
 
   addTraceEvent: (event) => {
@@ -74,8 +88,10 @@ const useAnalysisStore = create((set) => ({
       query: "",
       status: "idle",
       task: null,
+      workflow: null,
       result: null,
       confidence: null,
+      uncertainty: null,
       evidence: null,
       executionTrace: [],
     });

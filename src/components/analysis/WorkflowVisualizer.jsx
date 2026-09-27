@@ -1,64 +1,76 @@
 import useAnalysisStore from "../../store/analysisStore";
 
-const stages = [
-  {
-    key: "input_ready",
-    label: "INPUT",
-    detail: "Query received",
-  },
-  {
-    key: "understanding",
-    label: "UNDERSTAND",
-    detail: "Intent identified",
-  },
-  {
-    key: "validating",
-    label: "VALIDATE",
-    detail: "Input checked",
-  },
-  {
-    key: "routing",
-    label: "ROUTE",
-    detail: "Workflow selected",
-  },
-  {
-    key: "analyzing",
-    label: "ANALYZE",
-    detail: "Running analysis",
-  },
-  {
-    key: "evidence",
-    label: "EVIDENCE",
-    detail: "Evidence collected",
-  },
-  {
-    key: "complete",
-    label: "RESULT",
-    detail: "Answer generated",
-  },
-];
-
-const stageOrder = [
-  "idle",
-  "input_ready",
-  "understanding",
-  "validating",
-  "routing",
-  "analyzing",
-  "evidence",
-  "complete",
-];
-
 function WorkflowVisualizer() {
   const status = useAnalysisStore((state) => state.status);
+  const result = useAnalysisStore((state) => state.result);
 
-  const currentIndex = stageOrder.indexOf(status);
+  let stages = [
+    { key: "input_ready", label: "INPUT", detail: "Query received" },
+    { key: "understanding", label: "UNDERSTAND", detail: "Intent identified" },
+    { key: "validating", label: "VALIDATE", detail: "Input checked" },
+    { key: "routing", label: "ROUTE", detail: "Workflow selected" },
+    { key: "analyzing", label: "ANALYZE", detail: "Running analysis" },
+    { key: "evidence", label: "EVIDENCE", detail: "Evidence collected" },
+    { key: "complete", label: "RESULT", detail: "Answer generated" },
+  ];
+
+  let stageOrder = [
+    "idle",
+    "input_ready",
+    "understanding",
+    "validating",
+    "routing",
+    "analyzing",
+    "evidence",
+    "complete",
+  ];
+
+  if (result?.execution?.agents) {
+    const agents = result.execution.agents;
+    const analyzingIndex = stages.findIndex(s => s.key === "analyzing");
+    const analyzingOrderIndex = stageOrder.indexOf("analyzing");
+    
+    if (analyzingIndex !== -1) {
+      let agentStages = [];
+      let agentOrder = [];
+      
+      if (agents.includes("optical_sar_agent")) {
+        agentStages = [
+          { key: "agent_optical", label: "OPTICAL AGENT", detail: "Optical analysis" },
+          { key: "agent_sar", label: "SAR AGENT", detail: "Radar analysis" },
+          { key: "fusion", label: "FUSION", detail: "Multimodal fusion" }
+        ];
+        agentOrder = ["agent_optical", "agent_sar", "fusion"];
+      } else if (agents.includes("temporal_change_agent")) {
+        agentStages = [
+          { key: "agent_temporal", label: "TEMPORAL AGENT", detail: "Temporal alignment" },
+          { key: "analysis_change", label: "CHANGE ANALYSIS", detail: "Difference computed" }
+        ];
+        agentOrder = ["agent_temporal", "analysis_change"];
+      } else {
+        const agentName = agents[0].replace("_", " ").toUpperCase();
+        agentStages = [
+          { key: `agent_${agents[0]}`, label: agentName, detail: "Model analysis" }
+        ];
+        agentOrder = [`agent_${agents[0]}`];
+      }
+      
+      stages.splice(analyzingIndex, 1, ...agentStages);
+      stageOrder.splice(analyzingOrderIndex, 1, ...agentOrder);
+    }
+  }
+
+  const currentIndex = stageOrder.indexOf(status === "complete" ? "complete" : status);
 
   const getStageState = (stageKey) => {
     const stageIndex = stageOrder.indexOf(stageKey);
 
     if (status === "error") {
       return stageIndex <= currentIndex ? "error" : "pending";
+    }
+    
+    if (status === "complete") {
+      return "complete";
     }
 
     if (stageIndex < currentIndex) {
@@ -73,20 +85,16 @@ function WorkflowVisualizer() {
   };
 
   return (
-    <div className="pointer-events-none absolute bottom-5 left-1/2 z-30 w-[min(760px,calc(100%-32px))] -translate-x-1/2">
-      <div className="rounded-2xl border border-white/10 bg-[#0b0b0c]/85 px-5 py-4 shadow-2xl backdrop-blur-xl">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="pointer-events-none absolute bottom-4 left-1/2 z-30 w-[min(600px,calc(100%-32px))] -translate-x-1/2">
+      <div className="rounded-2xl border border-white/10 bg-[#0b0b0c]/85 px-4 py-3 shadow-2xl backdrop-blur-xl">
+        <div className="mb-2 flex items-center justify-between">
           <div>
-            <p className="text-[8px] tracking-[0.3em] text-white/30">
+            <p className="text-[7px] tracking-[0.3em] text-white/30">
               SATQUERY ANALYSIS PIPELINE
-            </p>
-
-            <p className="mt-1 text-[10px] text-white/50">
-              Query → Evidence → Explain
             </p>
           </div>
 
-          <span className="text-[8px] tracking-[0.2em] text-white/25">
+          <span className="text-[7px] tracking-[0.2em] text-white/25">
             {status === "complete" ? "COMPLETE" : "LIVE"}
           </span>
         </div>
@@ -102,7 +110,7 @@ function WorkflowVisualizer() {
               >
                 <div className="flex min-w-0 flex-col items-center">
                   <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-full border text-[8px] transition-all duration-500 ${
+                    className={`flex h-5 w-5 items-center justify-center rounded-full border text-[7px] transition-all duration-500 ${
                       state === "active"
                         ? "border-amber-300/70 bg-amber-300/10 text-amber-200 shadow-[0_0_20px_rgba(251,191,36,0.18)]"
                         : state === "complete"

@@ -16,9 +16,7 @@ export async function analyzeQuery(query, image) {
   const imageBlob = await imageResponse.blob();
 
   const formData = new FormData();
-
   formData.append("query", query);
-
   formData.append(
     "image",
     imageBlob,
@@ -50,12 +48,16 @@ export async function analyzeQuery(query, image) {
 
   return {
     task: data.task,
+    workflow: data.workflow || data.task,
     answer: data.answer,
     confidence: data.confidence,
-    evidence: null,
-    execution: {
+    uncertainty: data.uncertainty,
+    evidence: data.evidence,
+    trace_events: data.trace_events || [],
+    execution: data.execution || {
       model: data.model || "SatQuery Backend",
-      workflow: data.task,
+      workflow: data.workflow || data.task,
     },
+    image: data.image,
   };
 }

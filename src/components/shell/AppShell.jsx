@@ -41,7 +41,7 @@ function AppShell() {
                 : ""
             }`}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_55%)] pointer-events-none" />
 
             <div
               className={`absolute inset-0 transition-all duration-300 ${
@@ -55,21 +55,18 @@ function AppShell() {
 
             <SatQueryCore />
 
-            <div
-              className={`absolute inset-0 transition-all duration-300 ${
-                activeSection === "analysis"
-                  ? "ring-1 ring-inset ring-amber-300/30"
-                  : ""
-              }`}
-            >
-              <ResultPanel />
-              <TemporalComparison />
-              <MultimodalComparison />
+            <div className="pointer-events-none absolute inset-0 z-20">
+              <div className="pointer-events-auto">
+                <ResultPanel />
+                <TemporalComparison />
+                <MultimodalComparison />
+              </div>
             </div>
 
-            <AnalysisTrace />
-            <WorkflowVisualizer />
-            
+            <div className="pointer-events-auto">
+              <AnalysisTrace />
+              <WorkflowVisualizer />
+            </div>
           </section>
 
           <div
