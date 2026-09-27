@@ -8,7 +8,8 @@ from google.genai import types
 
 load_dotenv()
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-1.5-flash")
 
 client = genai.Client()
 
@@ -39,11 +40,12 @@ NOTE: Only apply these rules to the text meant for the user in the 'answer' or '
 
 
     max_attempts = 3
+    current_model = GEMINI_MODEL
 
     for attempt in range(1, max_attempts + 1):
         try:
             response = client.models.generate_content(
-                model=GEMINI_MODEL,
+                model=current_model,
                 contents=[
                     system_prompt,
                     user_prompt,
@@ -79,9 +81,14 @@ NOTE: Only apply these rules to the text meant for the user in the 'answer' or '
         except Exception as exc:
             error_text = str(exc)
 
-            # Do NOT retry on quota exhaustion
             if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text:
-                raise Exception("GEMINI_QUOTA_EXHAUSTED") from exc
+                if current_model == GEMINI_MODEL and GEMINI_FALLBACK_MODEL:
+                    # Switch to fallback model immediately and try again
+                    current_model = GEMINI_FALLBACK_MODEL
+                    continue
+                else:
+                    # If we already tried fallback or there is no fallback, fail.
+                    raise Exception("GEMINI_QUOTA_EXHAUSTED") from exc
 
             # Retry transient Gemini availability failures.
             is_transient = (
