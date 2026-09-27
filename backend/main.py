@@ -119,15 +119,6 @@ confidence=result.get("confidence") or 0.0,
                     "quota has been reached. Please try again later."
                 ),
             )
-        if "GEMINI_MODEL_NOT_FOUND" in err_msg:
-            raise HTTPException(
-                status_code=503,
-                detail=(
-                    "The configured Gemini model is not available for this API key. "
-                    "Please set a valid GEMINI_MODEL in the Render environment variables "
-                    "(e.g. gemini-2.0-flash or gemini-2.5-flash)."
-                ),
-            )
         raise HTTPException(
             status_code=503,
             detail=f"SatQuery engine analysis unavailable: {err_msg}",
