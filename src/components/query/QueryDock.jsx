@@ -159,10 +159,43 @@ function QueryDock() {
     } catch (error) {
       console.error("Analysis failed:", error);
 
+      let errorLabel = "ANALYSIS FAILED";
+      let errorDetail = error.message || "Backend analysis interrupted";
+      const errLower = errorDetail.toLowerCase();
+
+      if (
+        errLower.includes("quota") ||
+        errLower.includes("capacity") ||
+        errLower.includes("429") ||
+        errLower.includes("503") ||
+        errLower.includes("unavailable") ||
+        errLower.includes("exhausted")
+      ) {
+        errorLabel = "AI ANALYSIS TEMPORARILY UNAVAILABLE";
+        errorDetail = "Gemini model capacity or quota is temporarily unavailable. Your query and imagery are valid. Please try again shortly.";
+      } else if (
+        errLower.includes("model not found") ||
+        errLower.includes("invalid model") ||
+        errLower.includes("api key") ||
+        errLower.includes("configuration")
+      ) {
+        errorLabel = "MODEL CONFIGURATION ERROR";
+      } else if (
+        errLower.includes("failed to fetch") ||
+        errLower.includes("network") ||
+        errLower.includes("unreachable") ||
+        errLower.includes("backend request failed: 502")
+      ) {
+        errorLabel = "BACKEND CONNECTION ERROR";
+        if (errLower.includes("failed to fetch")) {
+          errorDetail = "Unable to reach the analysis backend. Please check your network connection.";
+        }
+      }
+
       addTraceEvent({
         type: "error",
-        label: "ANALYSIS FAILED",
-        detail: error.message || "Backend analysis interrupted",
+        label: errorLabel,
+        detail: errorDetail,
       });
 
       setStatus("error");

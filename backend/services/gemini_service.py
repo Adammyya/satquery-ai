@@ -20,19 +20,12 @@ def call_gemini(
     image_bytes: bytes,
     mime_type: str,
 ) -> dict:
-    # Detect language cue from the query to inject into the prompt
-    query_lower = user_prompt.lower()
-    if any(word in query_lower for word in ["mein", "hai", "kya", "kaisi", "kaisa", "yahan", "pe", "hain", "nahi", "kuch", "bahut", "zyada", "dekh", "dikh"]):
-        lang_instruction = "The user's query is in Hinglish (Hindi-English mix). You MUST write your 'answer' field in natural Hinglish — the same style as the user's question. Do NOT switch to formal English."
-    elif any(ord(c) > 0x0900 and ord(c) < 0x097F for c in user_prompt):
-        lang_instruction = "The user's query is in Hindi (Devanagari script). You MUST write your 'answer' field in Hindi."
-    else:
-        lang_instruction = "The user's query is in English. Write your 'answer' field in clear English."
+    lang_instruction = "IMPORTANT: Mirror the exact language, script, and stylistic tone of the user's query. If the query is in English, answer in English. If the query is in Hindi, answer in Hindi. If the query is a mix of Hindi and English (Hinglish), answer in natural Hinglish using the same Roman script mix, retaining technical remote-sensing terminology in English where natural. Do NOT force formal translation or randomly switch to English."
 
     CORE_INSTRUCTIONS = f"""
 LANGUAGE RULE (HIGHEST PRIORITY):
 {lang_instruction}
-The 'answer' field language MUST match the user query language exactly. Do NOT translate the user's language. Do NOT default to English if the query is not English. Technical terms (SAR, NDVI, vegetation, RGB, temporal) may remain in English regardless of query language.
+The 'answer' field language MUST match the user query language exactly. Do NOT translate the user's language. Technical terms (SAR, NDVI, vegetation, RGB, temporal) may remain in English regardless of query language.
 
 CRITICAL ANSWERING RULES:
 1. DIRECT ANSWER: Answer the USER'S SPECIFIC QUESTION directly. Do NOT give a generic image description unless the user explicitly asks to "describe the image" or "what do you see".
