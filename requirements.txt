@@ -1,8 +1,6 @@
-@"
 fastapi
-uvicorn[standard]
+uvicorn
 python-multipart
+google-genai
 python-dotenv
 pydantic
-google-genai
-"@ | Set-Content requirements.txt
