@@ -5,14 +5,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# We default to sqlite if DATABASE_URL is missing, to not break completely if pg is missing, 
-# but user requested Postgres. For postgres, ensure DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./satquery.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL)
+if not DATABASE_URL:
+    # We must explicitly fail if PostgreSQL URL is missing rather than falling back to SQLite
+    raise ValueError("DATABASE_URL environment variable is not set. A PostgreSQL database is required.")
+
+# SQLAlchemy expects 'postgresql://' instead of 'postgres://' (which some hosts provide)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+engine = create_engine(DATABASE_URL)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

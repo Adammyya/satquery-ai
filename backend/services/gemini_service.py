@@ -106,3 +106,5 @@ NOTE: Only apply these rules to the text meant for the user in the 'answer' or '
 
             # Exponential backoff: 2 s, then 4 s
             time.sleep(2 ** attempt)
+
+    raise Exception("Max retries exceeded for Gemini API call.")

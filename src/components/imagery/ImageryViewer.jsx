@@ -43,15 +43,15 @@ const handleUpload = (event) => {
 
   const assetUrl = URL.createObjectURL(file);
 
- setImage({
-  id: `upload-${Date.now()}`,
-  source: "LOCAL UPLOAD",
-  filename: file.name,
-  assetUrl,
-  acquisitionDate: null,
-  modality: "unknown",
-  file,
-});
+  setImage({
+    id: `upload-${Math.random().toString(36).substring(2, 11)}`,
+    source: "LOCAL UPLOAD",
+    filename: file.name,
+    assetUrl,
+    acquisitionDate: null,
+    modality: "unknown",
+    file,
+  });
 
   setZoom(1);
   setPan({ x: 0, y: 0 });
