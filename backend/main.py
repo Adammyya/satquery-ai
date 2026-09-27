@@ -10,11 +10,15 @@ from orchestrator.workflow import execute_workflow
 
 import models
 from database import engine, get_db
-from routers.auth import router as auth_router, get_current_user
+from routers.auth import (
+    router as auth_router,
+    get_current_user,
+    get_current_user_from_token_string,
+)
 
 load_dotenv()
 
-# Create tables
+# Auto-create tables on startup (idempotent)
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SatQuery AI Backend", version="1.0.0")
@@ -33,6 +37,7 @@ app.add_middleware(
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 
+
 @app.get("/")
 def home():
     return {
@@ -40,6 +45,7 @@ def home():
         "status": "online",
         "supported_modalities": ["optical"],
     }
+
 
 @app.post("/analyze")
 def analyze(data: Query):
@@ -49,54 +55,56 @@ def analyze(data: Query):
         "confidence": 0.90,
     }
 
+
 @app.post("/ai/analyze", response_model=AnalysisResponse)
 async def ai_analyze(
     query: str = Form(...),
     image: UploadFile = File(...),
     authorization: Optional[str] = Header(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     start_time = time.time()
     try:
         image_bytes = await image.read()
         if not image_bytes:
             raise HTTPException(status_code=400, detail="Uploaded image file is empty.")
-            
+
         mime_type = image.content_type or "image/jpeg"
         supported_mimes = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
         if mime_type not in supported_mimes:
-            raise HTTPException(status_code=400, detail=f"Unsupported format '{mime_type}'.")
+            raise HTTPException(
+                status_code=400, detail=f"Unsupported format '{mime_type}'."
+            )
 
-        result = execute_workflow(query, image_bytes, mime_type, image.filename or "satellite_image")
-        
+        result = execute_workflow(
+            query, image_bytes, mime_type, image.filename or "satellite_image"
+        )
+
         result["execution"]["latency_ms"] = int((time.time() - start_time) * 1000)
         result["image"] = {
             "filename": image.filename,
             "mime_type": mime_type,
         }
 
-        # Try to identify user if token is passed
+        # Optional: persist analysis if user is authenticated
         current_user = None
         if authorization and authorization.startswith("Bearer "):
-            token = authorization.split(" ")[1]
-            try:
-                current_user = get_current_user(token=token, db=db)
-            except HTTPException:
-                pass # If token is invalid, just proceed without saving to a user
+            token = authorization.split(" ", 1)[1]
+            current_user = get_current_user_from_token_string(token, db)
 
         if current_user:
             db_analysis = models.Analysis(
                 user_id=current_user.id,
                 query=query,
                 task=result.get("task", ""),
-                workflow=result.get("execution", {}).get("workflow_type", ""),
                 answer=result.get("answer", ""),
-                confidence=result.get("confidence", 0.0),
-                image_filename=image.filename
+                image_filename=image.filename,
+workflow=result.get("workflow", ""),
+confidence=result.get("confidence") or 0.0,
             )
             db.add(db_analysis)
             db.commit()
-        
+
         return result
 
     except HTTPException:
@@ -106,14 +114,12 @@ async def ai_analyze(
         if "GEMINI_QUOTA_EXHAUSTED" in err_msg:
             raise HTTPException(
                 status_code=429,
-                detail="AI analysis is temporarily unavailable because the Gemini API quota has been reached. Please try again later."
+                detail=(
+                    "AI analysis is temporarily unavailable because the Gemini API "
+                    "quota has been reached. Please try again later."
+                ),
             )
         raise HTTPException(
             status_code=503,
             detail=f"SatQuery engine analysis unavailable: {err_msg}",
         )
-
-@app.get("/api/history")
-def get_history(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    analyses = db.query(models.Analysis).filter(models.Analysis.user_id == current_user.id).order_by(models.Analysis.created_at.desc()).all()
-    return analyses
