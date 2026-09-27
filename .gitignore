@@ -30,3 +30,6 @@ dist/
 .DS_Store
 *.log
 .vscode/
+
+__pycache__/
+*.py[cod]
