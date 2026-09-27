@@ -10,7 +10,7 @@ If the authentic SAR sensor input is not provided, you must declare that multimo
 
 You must respond ONLY with a valid JSON object with this exact structure:
 {
-  "answer": "Concise factual description of the multimodal fusion results.",
+  "answer": "Direct answer to the multimodal fusion query, followed by supporting observation.",
   "confidence": 0.85,
   "uncertainty": "Explanation of potential sensor alignment or backscatter interpretation ambiguities.",
   "evidence": {
