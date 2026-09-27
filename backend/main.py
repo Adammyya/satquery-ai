@@ -102,9 +102,15 @@ async def ai_analyze(
     except HTTPException:
         raise
     except Exception as exc:
+        err_msg = str(exc)
+        if "GEMINI_QUOTA_EXHAUSTED" in err_msg:
+            raise HTTPException(
+                status_code=429,
+                detail="AI analysis is temporarily unavailable because the Gemini API quota has been reached. Please try again later."
+            )
         raise HTTPException(
             status_code=503,
-            detail=f"SatQuery engine analysis unavailable: {str(exc)}",
+            detail=f"SatQuery engine analysis unavailable: {err_msg}",
         )
 
 @app.get("/api/history")

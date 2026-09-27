@@ -79,12 +79,14 @@ NOTE: Only apply these rules to the text meant for the user in the 'answer' or '
         except Exception as exc:
             error_text = str(exc)
 
-            # Retry transient Gemini availability/rate-limit failures.
+            # Do NOT retry on quota exhaustion
+            if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text:
+                raise Exception("GEMINI_QUOTA_EXHAUSTED") from exc
+
+            # Retry transient Gemini availability failures.
             is_transient = (
                 "503" in error_text
                 or "UNAVAILABLE" in error_text
-                or "429" in error_text
-                or "RESOURCE_EXHAUSTED" in error_text
             )
 
             if not is_transient or attempt == max_attempts:
