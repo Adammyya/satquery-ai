@@ -5,11 +5,26 @@ export default function AuthModal({ onClose }) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [name, setName] = useState("");
+  const [localError, setLocalError] = useState("");
   const { login, register, isLoading, error } = useAuthStore();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLocalError("");
+    
+    if (!isLogin) {
+      if (password !== confirmPassword) {
+        setLocalError("Passwords do not match.");
+        return;
+      }
+      if (password.length < 6) {
+        setLocalError("Password must be at least 6 characters.");
+        return;
+      }
+    }
+
     try {
       if (isLogin) {
         await login(email, password);
@@ -18,7 +33,7 @@ export default function AuthModal({ onClose }) {
       }
       onClose();
     } catch (err) {
-      // Error is handled in store
+      // Error is handled in store, but we can catch local ones
     }
   };
 
@@ -29,9 +44,9 @@ export default function AuthModal({ onClose }) {
           {isLogin ? "Welcome Back" : "Create Account"}
         </h2>
         
-        {error && (
+        {(error || localError) && (
           <div className="mb-4 rounded-md bg-red-500/20 p-3 text-sm text-red-200">
-            {error}
+            {localError || error}
           </div>
         )}
 
@@ -69,10 +84,26 @@ export default function AuthModal({ onClose }) {
             />
           </div>
           
+          {!isLogin && (
+            <div>
+              <label className="mb-1 block text-sm text-gray-400">Confirm Password</label>
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-amber-400"
+              />
+            </div>
+          )}
+          
           <div className="mt-2 flex items-center justify-between">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setLocalError("");
+              }}
               className="text-sm text-amber-400 hover:underline"
             >
               {isLogin ? "Need an account?" : "Already have an account?"}
