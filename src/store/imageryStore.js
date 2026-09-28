@@ -13,6 +13,7 @@ const demoImagery = {
 const useImageryStore = create((set) => ({
   image: demoImagery,
   temporalImage: null,
+  sarImage: null,
   metadata: null,
   overlays: [],
   isLoading: false,
@@ -23,6 +24,10 @@ const useImageryStore = create((set) => ({
 
   setTemporalImage: (temporalImage) => {
     set({ temporalImage });
+  },
+
+  setSarImage: (sarImage) => {
+    set({ sarImage });
   },
 
   setMetadata: (metadata) => {
@@ -41,6 +46,7 @@ const useImageryStore = create((set) => ({
     set({
       image: null,
       temporalImage: null,
+      sarImage: null,
       metadata: null,
       overlays: [],
       isLoading: false,
@@ -52,6 +58,12 @@ const useImageryStore = create((set) => ({
       temporalImage: null,
     });
   },
+
+  clearSarImage: () => {
+    set({
+      sarImage: null,
+    });
+  },
 }));
 
-export default useImageryStore;
+export default useImageryStore;

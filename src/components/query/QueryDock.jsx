@@ -54,6 +54,7 @@ function QueryDock() {
   const setOverlays = useImageryStore((state) => state.setOverlays);
   const image = useImageryStore((state) => state.image);
   const temporalImage = useImageryStore((state) => state.temporalImage);
+  const sarImage = useImageryStore((state) => state.sarImage);
 
   const addTraceEvent = useAnalysisStore(
     (state) => state.addTraceEvent
@@ -72,7 +73,7 @@ function QueryDock() {
     /change|temporal|compare|comparison|difference|before|after|between/i.test(
       input
     );
-
+  const isMultimodalQuery = /sar|radar|multimodal|fusion/i.test(input);
 
   const handleAnalyze = async () => {
     const query = input.trim();
@@ -124,12 +125,13 @@ function QueryDock() {
         detail: "Executing analytical inference on remote-sensing data",
       });
 
+      const secondImage = isMultimodalQuery ? sarImage : (isTemporalQuery ? temporalImage : null);
+
       const analysis = await analyzeQuery(
         query,
         image,
-        isTemporalQuery ? temporalImage : null
+        secondImage
       );
-
 
       setStatus("evidence");
       addTraceEvent({
