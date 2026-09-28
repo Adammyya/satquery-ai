@@ -19,9 +19,17 @@ function ResultPanel() {
   }
 
   const isInputRequired = confidence == null;
-  const confidenceDisplay = isInputRequired ? "N/A" : `${Math.round(confidence * 100)}%`;
-  const statusLabel = isInputRequired ? "INPUT REQUIRED" : "ANALYSIS COMPLETE";
-  const statusColor = isInputRequired ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.45)]" : "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.45)]";
+  const confidenceDisplay = isInputRequired
+    ? "N/A"
+    : `${Math.round(confidence * 100)}%`;
+
+  const statusLabel = isInputRequired
+    ? "INPUT REQUIRED"
+    : "ANALYSIS COMPLETE";
+
+  const statusColor = isInputRequired
+    ? "bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.45)]"
+    : "bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.45)]";
 
   const taskLabel = task
     ? task.replaceAll("_", " ").toUpperCase()
@@ -82,15 +90,17 @@ function ResultPanel() {
         </p>
       </div>
 
-      {/* Uncertainty & Constraints (Truthful Remote-Sensing Intelligence) */}
-      {uncertainty && (
+      {/* Uncertainty & Constraints */}
+      {showConfidence && uncertainty && (
         <div className="mt-4 rounded-xl border border-white/8 bg-white/[0.02] p-3">
           <div className="flex items-center gap-1.5">
             <span className="text-amber-400/70 text-[10px]">◬</span>
+
             <p className="text-[8px] tracking-[0.2em] text-white/35 font-mono">
               UNCERTAINTY & CONSTRAINTS
             </p>
           </div>
+
           <p className="mt-1.5 text-[9.5px] leading-relaxed text-white/50 break-words">
             {uncertainty}
           </p>
@@ -114,7 +124,10 @@ function ResultPanel() {
             WORKFLOW
           </p>
 
-          <p className="mt-1 text-[9px] capitalize leading-4 text-white/60 font-medium truncate" title={workflowLabel}>
+          <p
+            className="mt-1 text-[9px] capitalize leading-4 text-white/60 font-medium truncate"
+            title={workflowLabel}
+          >
             {workflowLabel}
           </p>
         </div>
@@ -123,7 +136,10 @@ function ResultPanel() {
       {/* Execution Model & Latency */}
       {result.execution && (
         <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-2.5 text-[8.5px] text-white/40">
-          <span>MODEL: {result.execution.model || "SatQuery Engine"}</span>
+          <span>
+            MODEL: {result.execution.model || "SatQuery Engine"}
+          </span>
+
           {result.execution.latency_ms && (
             <span>{result.execution.latency_ms}ms</span>
           )}
@@ -167,6 +183,7 @@ function ResultPanel() {
             <p className="text-[7.5px] uppercase tracking-[0.2em] text-white/30 font-mono">
               Spatial Grounding
             </p>
+
             <p className="mt-1 text-[8.5px] text-white/45">
               {evidence.spatial_evidence_available
                 ? "Direct visual coordinates identified."
@@ -180,6 +197,7 @@ function ResultPanel() {
               <span className="font-semibold text-cyan-300/80 mr-1">
                 Data Requirement:
               </span>
+
               {evidence.requirements_status}
             </div>
           )}

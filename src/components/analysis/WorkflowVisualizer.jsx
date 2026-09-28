@@ -3,15 +3,48 @@ import useAnalysisStore from "../../store/analysisStore";
 function WorkflowVisualizer() {
   const status = useAnalysisStore((state) => state.status);
   const result = useAnalysisStore((state) => state.result);
+  const showTrace = useAnalysisStore((state) => state.showTrace);
+
+  if (!showTrace) {
+    return null;
+  }
 
   let stages = [
-    { key: "input_ready", label: "INPUT", detail: "Query received" },
-    { key: "understanding", label: "UNDERSTAND", detail: "Intent identified" },
-    { key: "validating", label: "VALIDATE", detail: "Input checked" },
-    { key: "routing", label: "ROUTE", detail: "Workflow selected" },
-    { key: "analyzing", label: "ANALYZE", detail: "Running analysis" },
-    { key: "evidence", label: "EVIDENCE", detail: "Evidence collected" },
-    { key: "complete", label: "RESULT", detail: "Answer generated" },
+    {
+      key: "input_ready",
+      label: "INPUT",
+      detail: "Query received",
+    },
+    {
+      key: "understanding",
+      label: "UNDERSTAND",
+      detail: "Intent identified",
+    },
+    {
+      key: "validating",
+      label: "VALIDATE",
+      detail: "Input checked",
+    },
+    {
+      key: "routing",
+      label: "ROUTE",
+      detail: "Workflow selected",
+    },
+    {
+      key: "analyzing",
+      label: "ANALYZE",
+      detail: "Running analysis",
+    },
+    {
+      key: "evidence",
+      label: "EVIDENCE",
+      detail: "Evidence collected",
+    },
+    {
+      key: "complete",
+      label: "RESULT",
+      detail: "Answer generated",
+    },
   ];
 
   let stageOrder = [
@@ -27,40 +60,72 @@ function WorkflowVisualizer() {
 
   if (result?.execution?.agents) {
     const agents = result.execution.agents;
-    const analyzingIndex = stages.findIndex(s => s.key === "analyzing");
+    const analyzingIndex = stages.findIndex(
+      (stage) => stage.key === "analyzing"
+    );
     const analyzingOrderIndex = stageOrder.indexOf("analyzing");
-    
+
     if (analyzingIndex !== -1) {
       let agentStages = [];
       let agentOrder = [];
-      
+
       if (agents.includes("optical_sar_agent")) {
         agentStages = [
-          { key: "agent_optical", label: "OPTICAL AGENT", detail: "Optical analysis" },
-          { key: "agent_sar", label: "SAR AGENT", detail: "Radar analysis" },
-          { key: "fusion", label: "FUSION", detail: "Multimodal fusion" }
+          {
+            key: "agent_optical",
+            label: "OPTICAL AGENT",
+            detail: "Optical analysis",
+          },
+          {
+            key: "agent_sar",
+            label: "SAR AGENT",
+            detail: "Radar analysis",
+          },
+          {
+            key: "fusion",
+            label: "FUSION",
+            detail: "Multimodal fusion",
+          },
         ];
+
         agentOrder = ["agent_optical", "agent_sar", "fusion"];
       } else if (agents.includes("temporal_change_agent")) {
         agentStages = [
-          { key: "agent_temporal", label: "TEMPORAL AGENT", detail: "Temporal alignment" },
-          { key: "analysis_change", label: "CHANGE ANALYSIS", detail: "Difference computed" }
+          {
+            key: "agent_temporal",
+            label: "TEMPORAL AGENT",
+            detail: "Temporal alignment",
+          },
+          {
+            key: "analysis_change",
+            label: "CHANGE ANALYSIS",
+            detail: "Difference computed",
+          },
         ];
+
         agentOrder = ["agent_temporal", "analysis_change"];
       } else {
         const agentName = agents[0].replace("_", " ").toUpperCase();
+
         agentStages = [
-          { key: `agent_${agents[0]}`, label: agentName, detail: "Model analysis" }
+          {
+            key: `agent_${agents[0]}`,
+            label: agentName,
+            detail: "Model analysis",
+          },
         ];
+
         agentOrder = [`agent_${agents[0]}`];
       }
-      
+
       stages.splice(analyzingIndex, 1, ...agentStages);
       stageOrder.splice(analyzingOrderIndex, 1, ...agentOrder);
     }
   }
 
-  const currentIndex = stageOrder.indexOf(status === "complete" ? "complete" : status);
+  const currentIndex = stageOrder.indexOf(
+    status === "complete" ? "complete" : status
+  );
 
   const getStageState = (stageKey) => {
     const stageIndex = stageOrder.indexOf(stageKey);
@@ -68,7 +133,7 @@ function WorkflowVisualizer() {
     if (status === "error") {
       return stageIndex <= currentIndex ? "error" : "pending";
     }
-    
+
     if (status === "complete") {
       return "complete";
     }
@@ -100,7 +165,10 @@ function WorkflowVisualizer() {
         </div>
 
         <div className="overflow-x-auto">
-          <div className="flex items-start" style={{ minWidth: `${stages.length * 72}px` }}>
+          <div
+            className="flex items-start"
+            style={{ minWidth: `${stages.length * 72}px` }}
+          >
             {stages.map((stage, index) => {
               const state = getStageState(stage.key);
 
@@ -109,7 +177,7 @@ function WorkflowVisualizer() {
                   key={stage.key}
                   className="flex min-w-0 flex-1 items-start"
                 >
-                  <div className="flex min-w-0 flex-col items-center w-full">
+                  <div className="flex min-w-0 w-full flex-col items-center">
                     <div
                       className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[7px] transition-all duration-500 ${
                         state === "active"
@@ -125,7 +193,7 @@ function WorkflowVisualizer() {
                     </div>
 
                     <p
-                      className={`mt-2 w-full text-center break-words text-[7.5px] leading-tight tracking-[0.1em] transition-colors duration-500 ${
+                      className={`mt-2 w-full break-words text-center text-[7.5px] leading-tight tracking-[0.1em] transition-colors duration-500 ${
                         state === "active"
                           ? "text-amber-200"
                           : state === "complete"
@@ -138,13 +206,16 @@ function WorkflowVisualizer() {
                       {stage.label}
                     </p>
 
-                    <p className="mt-1 hidden text-[7px] text-white/20 sm:block text-center">
+                    <p className="mt-1 hidden text-center text-[7px] text-white/20 sm:block">
                       {stage.detail}
                     </p>
                   </div>
 
                   {index < stages.length - 1 && (
-                    <div className="mx-1 mt-3.5 h-px flex-1 shrink-0 bg-white/10" style={{ minWidth: "8px" }}>
+                    <div
+                      className="mx-1 mt-3.5 h-px flex-1 shrink-0 bg-white/10"
+                      style={{ minWidth: "8px" }}
+                    >
                       <div
                         className={`h-full origin-left transition-all duration-700 ${
                           getStageState(stages[index + 1].key) !== "pending"
