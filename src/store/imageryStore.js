@@ -12,12 +12,17 @@ const demoImagery = {
 
 const useImageryStore = create((set) => ({
   image: demoImagery,
+  temporalImage: null,
   metadata: null,
   overlays: [],
   isLoading: false,
 
   setImage: (image) => {
     set({ image });
+  },
+
+  setTemporalImage: (temporalImage) => {
+    set({ temporalImage });
   },
 
   setMetadata: (metadata) => {
@@ -35,9 +40,16 @@ const useImageryStore = create((set) => ({
   clearImagery: () => {
     set({
       image: null,
+      temporalImage: null,
       metadata: null,
       overlays: [],
       isLoading: false,
+    });
+  },
+
+  clearTemporalImage: () => {
+    set({
+      temporalImage: null,
     });
   },
 }));

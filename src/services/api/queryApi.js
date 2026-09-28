@@ -32,7 +32,7 @@ async function resolveImageFile(image) {
   throw new Error("No usable image file is available.");
 }
 
-export async function analyzeQuery(query, image) {
+export async function analyzeQuery(query, image, image2 = null) {
   if (!query?.trim()) {
     throw new Error("Please enter an analysis query.");
   }
@@ -44,8 +44,16 @@ export async function analyzeQuery(query, image) {
   formData.append("query", query.trim());
   formData.append("image", imageFile);
 
+  // Optional Observation T2.
+  // Normal single-image analysis continues to send only T1.
+  if (image2) {
+    const image2File = await resolveImageFile(image2);
+    formData.append("image2", image2File);
+  }
+
   const token = localStorage.getItem("satquery_token");
   const headers = {};
+
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
