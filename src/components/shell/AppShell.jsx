@@ -36,7 +36,7 @@ function AppShell() {
         onSettingsClick={() => setSettingsOpen(true)}
       />
 
-      <div className="flex min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col-reverse md:flex-row">
         <NavigationRail
           activeSection={activeSection}
           onWorkspaceClick={() => setActiveSection("workspace")}
@@ -45,7 +45,7 @@ function AppShell() {
           onSettingsClick={() => setSettingsOpen(true)}
         />
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className="flex min-w-0 flex-1 flex-col relative pb-[env(safe-area-inset-bottom)]">
           <section
             className={`relative flex min-h-0 flex-1 items-center justify-center overflow-hidden transition-all duration-300 ${
               activeSection === "workspace"
