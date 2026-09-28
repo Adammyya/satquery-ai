@@ -66,11 +66,12 @@ function QueryDock() {
   );
 
   const isProcessing = processingStates.includes(status);
+  const canAnalyze = input.trim().length > 0;
 
   const handleAnalyze = async () => {
     const query = input.trim();
 
-    if (!query || isProcessing) {
+    if (!query || !canAnalyze || isProcessing) {
       return;
     }
 
@@ -267,7 +268,7 @@ function QueryDock() {
             <button
               type="button"
               onClick={handleAnalyze}
-              disabled={!input.trim() || isProcessing}
+              disabled={!canAnalyze || isProcessing}
               className="shrink-0 rounded-lg bg-amber-400 px-4 py-1.5 text-[10px] font-medium text-black transition-all hover:bg-amber-300 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
             >
               {getButtonLabel()}
