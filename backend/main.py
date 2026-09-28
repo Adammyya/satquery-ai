@@ -41,7 +41,7 @@ def home():
     return {
         "service": "SatQuery AI Remote-Sensing Intelligence Workstation",
         "status": "online",
-        "supported_modalities": ["optical"],
+        "supported_modalities": ["optical", "optical+sar_visual_proxy"],
     }
 
 

@@ -17,7 +17,7 @@ You must respond ONLY with a valid JSON object with this exact structure:
     "type": "MULTIMODAL",
     "description": "Factual evidence of the cross-sensor correlation.",
     "spatial_evidence_available": false,
-    "requirements_status": "SAR sensor and Optical sensor inputs verified."
+    "requirements_status": "Optical and user-supplied SAR observation accepted for visual multimodal comparison."
   }
 }
 """
@@ -39,31 +39,19 @@ def run_optical_sar(query: str, image_bytes: bytes, mime_type: str, image_filena
 
     user_prompt = f"User Query: {query}\nOptical Image Filename (Observation 1): {image_filename}\nSAR Image Filename (Observation 2): {sar_filename}\nAnalyze the multimodal correlation between the optical and SAR images and return the required JSON."
 
-    try:
-        result = call_gemini(
-            system_prompt=SYSTEM_PROMPT,
-            user_prompt=user_prompt,
-            image_bytes=image_bytes,
-            mime_type=mime_type,
-            image2_bytes=sar_bytes,
-            mime_type2=sar_mime
-        )
-        
-        # Enforce evidence type
-        if "evidence" not in result or not isinstance(result["evidence"], dict):
-            result["evidence"] = {}
-        result["evidence"]["type"] = "MULTIMODAL"
-        result["evidence"]["requirements_status"] = "SAR sensor and Optical sensor inputs verified."
-        
-        return result
-    except Exception as e:
-        return {
-            "answer": f"Multimodal analysis failed: {str(e)}",
-            "confidence": 0.0,
-            "uncertainty": "Processing error during Gemini cross-sensor inference.",
-            "evidence": {
-                "type": "ERROR",
-                "description": "Pipeline execution failed.",
-                "spatial_evidence_available": False
-            }
-        }
+    result = call_gemini(
+        system_prompt=SYSTEM_PROMPT,
+        user_prompt=user_prompt,
+        image_bytes=image_bytes,
+        mime_type=mime_type,
+        image2_bytes=sar_bytes,
+        mime_type2=sar_mime
+    )
+
+    # Enforce evidence type
+    if "evidence" not in result or not isinstance(result["evidence"], dict):
+        result["evidence"] = {}
+    result["evidence"]["type"] = "MULTIMODAL"
+    result["evidence"]["requirements_status"] = "Optical and user-supplied SAR observation accepted for visual multimodal comparison."
+
+    return result

@@ -31,6 +31,7 @@ class AnalysisResponse(BaseModel):
     trace_events: List[TraceEvent]
     execution: Execution
     image: Optional[Dict[str, Any]] = None
+    image2: Optional[Dict[str, Any]] = None
 
 class Query(BaseModel):
     query: str
