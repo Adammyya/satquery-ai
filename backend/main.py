@@ -1,9 +1,10 @@
 import time
+from typing import Optional
+
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from typing import Optional
 
 from schemas.analysis import AnalysisResponse, Query
 from orchestrator.workflow import execute_workflow
@@ -15,6 +16,7 @@ from routers.auth import (
     get_current_user,
     get_current_user_from_token_string,
 )
+
 
 load_dotenv()
 
@@ -56,34 +58,99 @@ def analyze(data: Query):
 async def ai_analyze(
     query: str = Form(...),
     image: UploadFile = File(...),
+    image2: Optional[UploadFile] = File(None),
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
     start_time = time.time()
-    try:
-        image_bytes = await image.read()
-        if not image_bytes:
-            raise HTTPException(status_code=400, detail="Uploaded image file is empty.")
 
-        mime_type = image.content_type or "image/jpeg"
-        supported_mimes = ["image/jpeg", "image/png", "image/webp", "image/jpg"]
-        if mime_type not in supported_mimes:
+    try:
+        # -----------------------------
+        # Observation T1
+        # -----------------------------
+        image_bytes = await image.read()
+
+        if not image_bytes:
             raise HTTPException(
-                status_code=400, detail=f"Unsupported format '{mime_type}'."
+                status_code=400,
+                detail="Uploaded image file is empty.",
             )
 
+        mime_type = image.content_type or "image/jpeg"
+        supported_mimes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/jpg",
+        ]
+
+        if mime_type not in supported_mimes:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported format '{mime_type}'.",
+            )
+
+        # -----------------------------
+        # Observation T2 (optional)
+        # -----------------------------
+        image2_bytes = None
+        mime_type2 = None
+        image2_filename = None
+
+        if image2 is not None:
+            image2_bytes = await image2.read()
+
+            if not image2_bytes:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Second uploaded image file is empty.",
+                )
+
+            mime_type2 = image2.content_type or "image/jpeg"
+
+            if mime_type2 not in supported_mimes:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unsupported second image format '{mime_type2}'.",
+                )
+
+            image2_filename = image2.filename or "satellite_image_t2"
+
+        # -----------------------------
+        # Execute workflow
+        # -----------------------------
         result = execute_workflow(
-            query, image_bytes, mime_type, image.filename or "satellite_image"
+            query,
+            image_bytes,
+            mime_type,
+            image.filename or "satellite_image_t1",
+            image2_bytes,
+            mime_type2,
+            image2_filename,
         )
 
-        result["execution"]["latency_ms"] = int((time.time() - start_time) * 1000)
+        result["execution"]["latency_ms"] = int(
+            (time.time() - start_time) * 1000
+        )
+
+        # T1 metadata
         result["image"] = {
             "filename": image.filename,
             "mime_type": mime_type,
         }
 
-        # Optional: persist analysis if user is authenticated
+        # T2 metadata, only when supplied
+        if image2 is not None:
+            result["image2"] = {
+                "filename": image2.filename,
+                "mime_type": mime_type2,
+            }
+
+        # -----------------------------
+        # Optional authenticated history
+        # -----------------------------
         current_user = None
+
         if authorization and authorization.startswith("Bearer "):
             token = authorization.split(" ", 1)[1]
             current_user = get_current_user_from_token_string(token, db)
@@ -95,9 +162,10 @@ async def ai_analyze(
                 task=result.get("task", ""),
                 answer=result.get("answer", ""),
                 image_filename=image.filename,
-workflow=result.get("workflow", ""),
-confidence=result.get("confidence") or 0.0,
+                workflow=result.get("workflow", ""),
+                confidence=result.get("confidence") or 0.0,
             )
+
             db.add(db_analysis)
             db.commit()
 
@@ -105,8 +173,10 @@ confidence=result.get("confidence") or 0.0,
 
     except HTTPException:
         raise
+
     except Exception as exc:
         err_msg = str(exc)
+
         if "GEMINI_QUOTA_EXHAUSTED" in err_msg:
             raise HTTPException(
                 status_code=429,
@@ -115,6 +185,7 @@ confidence=result.get("confidence") or 0.0,
                     "quota has been reached. Please try again later."
                 ),
             )
+
         raise HTTPException(
             status_code=503,
             detail=f"SatQuery engine analysis unavailable: {err_msg}",

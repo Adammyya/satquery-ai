@@ -5,9 +5,7 @@ google-genai
 python-dotenv
 pydantic
 sqlalchemy
-psycopg2-binary
 psycopg[binary]
-passlib
 bcrypt
 python-jose[cryptography]
 email-validator

@@ -19,8 +19,17 @@ def call_gemini(
     user_prompt: str,
     image_bytes: bytes,
     mime_type: str,
+    image2_bytes: bytes = None,
+    mime_type2: str = None,
 ) -> dict:
-    lang_instruction = "IMPORTANT: Mirror the exact language, script, and stylistic tone of the user's query. If the query is in English, answer in English. If the query is in Hindi, answer in Hindi. If the query is a mix of Hindi and English (Hinglish), answer in natural Hinglish using the same Roman script mix, retaining technical remote-sensing terminology in English where natural. Do NOT force formal translation or randomly switch to English."
+    lang_instruction = (
+        "IMPORTANT: Mirror the exact language, script, and stylistic tone of the user's query. "
+        "If the query is in English, answer in English. "
+        "If the query is in Hindi, answer in Hindi. "
+        "If the query is a mix of Hindi and English (Hinglish), answer in natural Hinglish "
+        "using the same Roman script mix, retaining technical remote-sensing terminology in English "
+        "where natural. Do NOT force formal translation or randomly switch to English."
+    )
 
     CORE_INSTRUCTIONS = f"""
 LANGUAGE RULE (HIGHEST PRIORITY):
@@ -35,8 +44,29 @@ CRITICAL ANSWERING RULES:
 5. CONCISE: 2-5 sentences in the 'answer' field.
 NOTE: Apply language and content rules only to 'answer' and 'evidence.description' fields. Do NOT translate JSON keys.
 """
+
     system_prompt = system_prompt + "\n" + CORE_INSTRUCTIONS
 
+    # Build the multimodal content dynamically.
+    # Existing callers provide only image_bytes, so single-image VQA
+    # continues to work exactly as before.
+    contents = [
+        system_prompt,
+        user_prompt,
+        types.Part.from_bytes(
+            data=image_bytes,
+            mime_type=mime_type,
+        ),
+    ]
+
+    # Temporal analysis can provide Observation T2.
+    if image2_bytes:
+        contents.append(
+            types.Part.from_bytes(
+                data=image2_bytes,
+                mime_type=mime_type2 or "image/jpeg",
+            )
+        )
 
     max_attempts = 3
     current_model = GEMINI_MODEL
@@ -45,14 +75,7 @@ NOTE: Apply language and content rules only to 'answer' and 'evidence.descriptio
         try:
             response = client.models.generate_content(
                 model=current_model,
-                contents=[
-                    system_prompt,
-                    user_prompt,
-                    types.Part.from_bytes(
-                        data=image_bytes,
-                        mime_type=mime_type,
-                    ),
-                ],
+                contents=contents,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     temperature=0.2,

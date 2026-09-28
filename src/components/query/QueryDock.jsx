@@ -51,9 +51,9 @@ function QueryDock() {
   const setExecutionTrace = useAnalysisStore(
     (state) => state.setExecutionTrace
   );
-
   const setOverlays = useImageryStore((state) => state.setOverlays);
   const image = useImageryStore((state) => state.image);
+  const temporalImage = useImageryStore((state) => state.temporalImage);
 
   const addTraceEvent = useAnalysisStore(
     (state) => state.addTraceEvent
@@ -67,6 +67,12 @@ function QueryDock() {
 
   const isProcessing = processingStates.includes(status);
   const canAnalyze = input.trim().length > 0;
+
+  const isTemporalQuery =
+    /change|temporal|compare|comparison|difference|before|after|between/i.test(
+      input
+    );
+
 
   const handleAnalyze = async () => {
     const query = input.trim();
@@ -118,7 +124,12 @@ function QueryDock() {
         detail: "Executing analytical inference on remote-sensing data",
       });
 
-      const analysis = await analyzeQuery(query, image);
+      const analysis = await analyzeQuery(
+        query,
+        image,
+        isTemporalQuery ? temporalImage : null
+      );
+
 
       setStatus("evidence");
       addTraceEvent({
@@ -254,7 +265,9 @@ function QueryDock() {
               value={input}
               onChange={(event) => {
                 if (event.target.value.length <= 300) {
-                  setInput(event.target.value);
+                  const value = event.target.value;
+                  setInput(value);
+                  setQuery(value);
                   setActiveSuggestion(null);
                 }
               }}
@@ -286,6 +299,7 @@ function QueryDock() {
                 disabled={isProcessing}
                 onClick={() => {
                   setInput(suggestion.query);
+                  setQuery(suggestion.query);
                   setActiveSuggestion(suggestion);
                 }}
                 className={`rounded-lg border px-3 py-1.5 text-[9px] tracking-[0.12em] transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
