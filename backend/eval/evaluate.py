@@ -8,7 +8,7 @@ def load_profiles():
             return json.load(f)
     return {}
 
-def evaluate_results(manifest_path: str):
+def evaluate_results(manifest_path: str, actual_results_path: str = None):
     """
     Consumes a structured JSON manifest of benchmark examples and computes basic metrics.
     Manifest format expected:
@@ -17,7 +17,7 @@ def evaluate_results(manifest_path: str):
          "task": "satellite_vqa",
          "query": "Is there a flood?",
          "expected_answer_keywords": ["flood", "water"],
-         "actual_result": { "answer": "...", "confidence": 0.85, "evidence": {...} }
+         "reference_result": { "answer": "...", "confidence": 0.85, "evidence": {...} }
       }
     ]
     """
@@ -26,27 +26,50 @@ def evaluate_results(manifest_path: str):
         return
 
     with open(manifest_path, 'r') as f:
-        data = json.load(f)
+        manifest_data = json.load(f)
+
+    actual_results_data = []
+    use_synthetic = True
+
+    if actual_results_path and os.path.exists(actual_results_path):
+        with open(actual_results_path, 'r') as f:
+            actual_results_data = json.load(f)
+        use_synthetic = False
+        print(f"Evaluating ACTUAL model results from {actual_results_path}")
+    else:
+        print("No actual results supplied. Running in SYNTHETIC FIXTURE mode using 'reference_result'.")
+        print("NOTE: This manifest contains hardcoded reference data for demonstration purposes, NOT real model benchmark performance.")
 
     metrics = {
-        "total": len(data),
+        "total": len(manifest_data),
         "success": 0,
         "failed": 0,
         "average_confidence": 0.0,
-        "evidence_available_count": 0
+        "evidence_available_count": 0,
+        "task_breakdown": {}
     }
     
     total_conf = 0.0
     conf_count = 0
 
-    for item in data:
-        result = item.get("actual_result", {})
+    for i, item in enumerate(manifest_data):
+        task = item.get("task", "unknown_task")
+        if task not in metrics["task_breakdown"]:
+            metrics["task_breakdown"][task] = {"total": 0, "success": 0}
+        metrics["task_breakdown"][task]["total"] += 1
+
+        if use_synthetic:
+            result = item.get("reference_result", {})
+        else:
+            result = actual_results_data[i] if i < len(actual_results_data) else {}
+
         ans = result.get("answer", "").lower()
         
-        # Exact/Semantic match (basic keyword check for demo purposes)
+        # Exact/Semantic match
         keywords = item.get("expected_answer_keywords", [])
         if any(k.lower() in ans for k in keywords):
             metrics["success"] += 1
+            metrics["task_breakdown"][task]["success"] += 1
         else:
             metrics["failed"] += 1
             
@@ -62,12 +85,12 @@ def evaluate_results(manifest_path: str):
     if conf_count > 0:
         metrics["average_confidence"] = total_conf / conf_count
         
-    print("=== SATQUERY AI Evaluation Report ===")
+    print("\n=== SATQUERY AI Evaluation Report ===")
     print(json.dumps(metrics, indent=2))
-    print("\nNote: True model fine-tuning requires offline domain adaptation.")
+    print("\n[DISCLAIMER] Keyword matching is a basic demonstration metric, not a scientific semantic evaluation or model accuracy measurement.")
+    print("True model fine-tuning requires offline domain adaptation on domain-specific datasets.")
     return metrics
 
 if __name__ == "__main__":
-    # Example usage (would run over a real dataset JSON)
-    # evaluate_results("dataset_manifest.json")
-    print("Evaluation scaffold ready.")
+    manifest = os.path.join(os.path.dirname(__file__), "dataset_manifest.json")
+    evaluate_results(manifest)
