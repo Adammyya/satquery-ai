@@ -25,12 +25,14 @@ const handleUpload = (event) => {
     "image/jpeg",
     "image/png",
     "image/webp",
+    "image/tiff",
+    "image/tif",
   ];
 
   const maxFileSize = 25 * 1024 * 1024;
 
-  if (!supportedTypes.includes(file.type)) {
-    setUploadError("Unsupported format. Use JPG, PNG, or WebP.");
+  if (!supportedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.tif') && !file.name.toLowerCase().endsWith('.tiff')) {
+    setUploadError("Unsupported format. Use JPG, PNG, WebP, or TIFF.");
     event.target.value = "";
     return;
   }
@@ -115,15 +117,22 @@ const overlays = useImageryStore((state) => state.overlays);
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <img
-        src={image.assetUrl}
-        alt={`${image.source} satellite imagery`}
-        className="pointer-events-none h-full w-full select-none object-cover transition-transform duration-200"
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-        }}
-        draggable={false}
-      />
+      {image.file?.type === "image/tiff" || image.filename?.toLowerCase().endsWith(".tif") || image.filename?.toLowerCase().endsWith(".tiff") ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
+          <p className="text-[10px] tracking-[0.2em] text-white/40">TIFF PREVIEW UNAVAILABLE</p>
+          <p className="text-[8px] tracking-[0.1em] text-white/20 mt-2">File will be processed natively by the backend</p>
+        </div>
+      ) : (
+        <img
+          src={image.assetUrl}
+          alt={`${image.source} satellite imagery`}
+          className="pointer-events-none h-full w-full select-none object-cover transition-transform duration-200"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          }}
+          draggable={false}
+        />
+      )}
       {overlays.map((overlay, index) => {
   if (
     overlay.type !== "bounding_box" &&
@@ -166,7 +175,7 @@ const overlays = useImageryStore((state) => state.overlays);
       <input
   ref={fileInputRef}
   type="file"
-  accept="image/jpeg,image/png,image/webp"
+  accept="image/jpeg,image/png,image/webp,image/tiff,.tif,.tiff"
   onChange={handleUpload}
   className="hidden"
 />

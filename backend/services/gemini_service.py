@@ -1,10 +1,16 @@
 import json
 import os
 import time
+import io
 
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 load_dotenv()
 
@@ -12,6 +18,40 @@ GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL")
 
 client = genai.Client()
+
+def preprocess_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str, str]:
+    """
+    Converts unsupported formats like TIFF to JPEG for Gemini.
+    Returns (processed_bytes, new_mime_type, extracted_metadata_string).
+    """
+    metadata_msg = ""
+    if mime_type.lower() in ["image/tiff", "image/tif"]:
+        if not Image:
+            raise RuntimeError("TIFF processing requires the 'pillow' library, which is not installed.")
+
+        try:
+            img = Image.open(io.BytesIO(image_bytes))
+
+            # Detect GeoTIFF tags (33550: PixelScale, 33922: Tiepoint, 34735: GeoKeyDirectory)
+            if hasattr(img, "tag_v2"):
+                tags = img.tag_v2.keys()
+                if 33550 in tags or 33922 in tags or 34735 in tags:
+                    metadata_msg = "\n\n[SYSTEM METADATA: Uploaded image is a GeoTIFF containing embedded geospatial metadata (Pixel Scale/Tiepoints). Note: Raw coordinate/CRS interpretation is currently limited to visual approximations.]"
+                else:
+                    metadata_msg = "\n\n[SYSTEM METADATA: Uploaded image is a standard TIFF.]"
+            else:
+                metadata_msg = "\n\n[SYSTEM METADATA: Uploaded image is a standard TIFF.]"
+
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+
+            output = io.BytesIO()
+            img.save(output, format="JPEG", quality=90)
+            return output.getvalue(), "image/jpeg", metadata_msg
+        except Exception as e:
+            raise ValueError(f"TIFF preprocessing failed: {str(e)}") from e
+
+    return image_bytes, mime_type, metadata_msg
 
 
 def call_gemini(
@@ -45,26 +85,29 @@ CRITICAL ANSWERING RULES:
 NOTE: Apply language and content rules only to 'answer' and 'evidence.description' fields. Do NOT translate JSON keys.
 """
 
-    system_prompt = system_prompt + "\n" + CORE_INSTRUCTIONS
+    # Preprocess images (e.g. TIFF to JPEG) and extract metadata
+    proc_image_bytes, proc_mime, meta_msg1 = preprocess_image(image_bytes, mime_type)
+    system_prompt = system_prompt + "\n" + CORE_INSTRUCTIONS + meta_msg1
 
-    # Build the multimodal content dynamically.
-    # Existing callers provide only image_bytes, so single-image VQA
-    # continues to work exactly as before.
     contents = [
         system_prompt,
         user_prompt,
         types.Part.from_bytes(
-            data=image_bytes,
-            mime_type=mime_type,
+            data=proc_image_bytes,
+            mime_type=proc_mime,
         ),
     ]
 
     # Temporal analysis can provide Observation T2.
     if image2_bytes:
+        proc_image2_bytes, proc_mime2, meta_msg2 = preprocess_image(image2_bytes, mime_type2 or "image/jpeg")
+        if meta_msg2:
+            contents[0] += "\n" + meta_msg2.replace("SYSTEM METADATA:", "SYSTEM METADATA (T2):")
+
         contents.append(
             types.Part.from_bytes(
-                data=image2_bytes,
-                mime_type=mime_type2 or "image/jpeg",
+                data=proc_image2_bytes,
+                mime_type=proc_mime2,
             )
         )
 

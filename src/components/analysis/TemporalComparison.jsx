@@ -44,12 +44,14 @@ function TemporalComparison() {
       "image/jpeg",
       "image/png",
       "image/webp",
+      "image/tiff",
+      "image/tif",
     ];
 
     const maxSize = 25 * 1024 * 1024;
 
-    if (!supportedTypes.includes(file.type)) {
-      window.alert("Please upload a JPEG, PNG, or WebP image.");
+    if (!supportedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.tif') && !file.name.toLowerCase().endsWith('.tiff')) {
+      window.alert("Please upload a JPEG, PNG, WebP, or TIFF image.");
       event.target.value = "";
       return;
     }
@@ -156,7 +158,7 @@ function TemporalComparison() {
               <input
                 ref={inputRef}
                 type="file"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                accept=".jpg,.jpeg,.png,.webp,.tif,.tiff,image/jpeg,image/png,image/webp,image/tiff"
                 onChange={handleT2Upload}
                 className="hidden"
               />

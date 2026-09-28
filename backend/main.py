@@ -82,6 +82,8 @@ async def ai_analyze(
             "image/png",
             "image/webp",
             "image/jpg",
+            "image/tiff",
+            "image/tif",
         ]
 
         if mime_type not in supported_mimes:
