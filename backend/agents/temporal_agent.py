@@ -1,5 +1,6 @@
+import io
+from PIL import Image, ImageChops, ImageStat
 from services.gemini_service import call_gemini
-
 
 SYSTEM_PROMPT = """You are SatQuery AI, a specialized scientific remote-sensing intelligence engine.
 Your role is to perform temporal change detection between two co-registered Earth observation satellite images.
@@ -21,14 +22,6 @@ Do not hallucinate exact geographic coordinates or synthetic change masks.
 Describe changes visually and accurately based on observable spatial and spectral differences.
 Do not just describe the images generically unless the user asks for a general comparison.
 
-Consider that apparent differences can be caused by:
-- acquisition lighting
-- cloud or atmospheric conditions
-- image alignment
-- seasonal variation
-- sensor differences
-- actual surface change
-
 If the images are not sufficiently aligned or comparable, clearly state that limitation.
 
 You must respond ONLY with a valid JSON object with this exact structure:
@@ -45,6 +38,48 @@ You must respond ONLY with a valid JSON object with this exact structure:
 }
 """
 
+def calculate_visual_difference(img1_bytes: bytes, img2_bytes: bytes):
+    try:
+        img1 = Image.open(io.BytesIO(img1_bytes)).convert("RGB")
+        img2 = Image.open(io.BytesIO(img2_bytes)).convert("RGB")
+
+        if img1.size != img2.size:
+            img2 = img2.resize(img1.size)
+
+        diff = ImageChops.difference(img1, img2)
+        stat = ImageStat.Stat(diff)
+        mean_diff = sum(stat.mean) / len(stat.mean) / 255.0
+
+        # very coarse threshold for regions
+        diff_gray = diff.convert("L")
+        threshold = 50
+        bbox = diff_gray.point(lambda p: p > threshold and 255).getbbox()
+
+        regions = []
+        if bbox:
+            w, h = img1.size
+            regions.append({
+                "label": "coarse_visual_change",
+                "x": bbox[0] / w,
+                "y": bbox[1] / h,
+                "width": (bbox[2] - bbox[0]) / w,
+                "height": (bbox[3] - bbox[1]) / h,
+                "confidence": min(1.0, mean_diff * 5),
+                "basis": "approximate_visual_region"
+            })
+
+        return {
+            "visual_difference_available": True,
+            "approximate_changed_regions": regions,
+            "difference_ratio": round(mean_diff, 4),
+            "comparison_limitations": "Differences may be due to lighting, alignment, or season."
+        }
+    except Exception as e:
+        return {
+            "visual_difference_available": False,
+            "comparison_limitations": f"Failed to compute visual difference: {str(e)}"
+        }
+
 
 def run_temporal(
     query: str,
@@ -56,7 +91,6 @@ def run_temporal(
     image2_filename: str = None,
 ) -> dict:
 
-    # Temporal analysis requires both observations.
     if not image2_bytes:
         return {
             "answer": (
@@ -82,7 +116,6 @@ def run_temporal(
         "Return only the required JSON object."
     )
 
-    # Send both observations to Gemini.
     result = call_gemini(
         SYSTEM_PROMPT,
         user_prompt,
@@ -92,8 +125,6 @@ def run_temporal(
         mime_type2,
     )
 
-    # Ensure the temporal evidence type remains explicit even if the model
-    # omits or modifies it.
     if not isinstance(result, dict):
         raise ValueError("Temporal Gemini response was not a JSON object.")
 
@@ -103,5 +134,11 @@ def run_temporal(
         "requirements_status",
         "Temporal pair successfully analyzed.",
     )
+
+    diff_data = calculate_visual_difference(image_bytes, image2_bytes)
+    result["evidence"]["visual_difference_available"] = diff_data.get("visual_difference_available", False)
+    result["evidence"]["approximate_changed_regions"] = diff_data.get("approximate_changed_regions", [])
+    result["evidence"]["difference_ratio"] = diff_data.get("difference_ratio")
+    result["evidence"]["comparison_limitations"] = diff_data.get("comparison_limitations")
 
     return result

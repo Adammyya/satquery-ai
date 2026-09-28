@@ -19,39 +19,55 @@ GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL")
 
 client = genai.Client()
 
-def preprocess_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str, str]:
+def preprocess_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str, str, dict]:
     """
     Converts unsupported formats like TIFF to JPEG for Gemini.
-    Returns (processed_bytes, new_mime_type, extracted_metadata_string).
+    Returns (processed_bytes, new_mime_type, extracted_metadata_string, geospatial_metadata).
     """
     metadata_msg = ""
+    geospatial_metadata = None
     if mime_type.lower() in ["image/tiff", "image/tif"]:
         if not Image:
             raise RuntimeError("TIFF processing requires the 'pillow' library, which is not installed.")
 
         try:
             img = Image.open(io.BytesIO(image_bytes))
+            geospatial_metadata = {
+                "is_geotiff": False,
+                "width": img.width,
+                "height": img.height,
+                "band_count": len(img.getbands()),
+                "pixel_scale": None,
+                "tiepoint": None,
+                "crs": None,
+                "limitations": "Raw CRS interpretation is unavailable without dedicated geospatial libraries."
+            }
 
             # Detect GeoTIFF tags (33550: PixelScale, 33922: Tiepoint, 34735: GeoKeyDirectory)
             if hasattr(img, "tag_v2"):
                 tags = img.tag_v2.keys()
+                is_geo = False
                 if 33550 in tags or 33922 in tags or 34735 in tags:
-                    metadata_msg = "\n\n[SYSTEM METADATA: Uploaded image is a GeoTIFF containing embedded geospatial metadata (Pixel Scale/Tiepoints). Note: Raw coordinate/CRS interpretation is currently limited to visual approximations.]"
+                    is_geo = True
+                    metadata_msg = "\\n\\n[SYSTEM METADATA: Uploaded image is a GeoTIFF containing embedded geospatial metadata (Pixel Scale/Tiepoints). Note: Raw coordinate/CRS interpretation is currently limited to visual approximations.]"
+                    geospatial_metadata["is_geotiff"] = True
+                    geospatial_metadata["pixel_scale"] = img.tag_v2.get(33550)
+                    geospatial_metadata["tiepoint"] = img.tag_v2.get(33922)
                 else:
-                    metadata_msg = "\n\n[SYSTEM METADATA: Uploaded image is a standard TIFF.]"
+                    metadata_msg = "\\n\\n[SYSTEM METADATA: Uploaded image is a standard TIFF.]"
             else:
-                metadata_msg = "\n\n[SYSTEM METADATA: Uploaded image is a standard TIFF.]"
+                metadata_msg = "\\n\\n[SYSTEM METADATA: Uploaded image is a standard TIFF.]"
 
             if img.mode != 'RGB':
                 img = img.convert('RGB')
 
             output = io.BytesIO()
             img.save(output, format="JPEG", quality=90)
-            return output.getvalue(), "image/jpeg", metadata_msg
+            return output.getvalue(), "image/jpeg", metadata_msg, geospatial_metadata
         except Exception as e:
             raise ValueError(f"TIFF preprocessing failed: {str(e)}") from e
 
-    return image_bytes, mime_type, metadata_msg
+    return image_bytes, mime_type, metadata_msg, geospatial_metadata
 
 
 def call_gemini(
@@ -86,8 +102,8 @@ NOTE: Apply language and content rules only to 'answer' and 'evidence.descriptio
 """
 
     # Preprocess images (e.g. TIFF to JPEG) and extract metadata
-    proc_image_bytes, proc_mime, meta_msg1 = preprocess_image(image_bytes, mime_type)
-    system_prompt = system_prompt + "\n" + CORE_INSTRUCTIONS + meta_msg1
+    proc_image_bytes, proc_mime, meta_msg1, geo_meta1 = preprocess_image(image_bytes, mime_type)
+    system_prompt = system_prompt + "\\n" + CORE_INSTRUCTIONS + meta_msg1
 
     contents = [
         system_prompt,
@@ -100,9 +116,9 @@ NOTE: Apply language and content rules only to 'answer' and 'evidence.descriptio
 
     # Temporal analysis can provide Observation T2.
     if image2_bytes:
-        proc_image2_bytes, proc_mime2, meta_msg2 = preprocess_image(image2_bytes, mime_type2 or "image/jpeg")
+        proc_image2_bytes, proc_mime2, meta_msg2, geo_meta2 = preprocess_image(image2_bytes, mime_type2 or "image/jpeg")
         if meta_msg2:
-            contents[0] += "\n" + meta_msg2.replace("SYSTEM METADATA:", "SYSTEM METADATA (T2):")
+            contents[0] += "\\n" + meta_msg2.replace("SYSTEM METADATA:", "SYSTEM METADATA (T2):")
 
         contents.append(
             types.Part.from_bytes(
@@ -128,7 +144,11 @@ NOTE: Apply language and content rules only to 'answer' and 'evidence.descriptio
             raw_text = response.text or "{}"
 
             try:
-                return json.loads(raw_text)
+                result = json.loads(raw_text)
+                if geo_meta1:
+                    result.setdefault("evidence", {})
+                    result["evidence"]["geospatial_metadata"] = geo_meta1
+                return result
             except json.JSONDecodeError:
                 clean_text = raw_text.strip()
 
@@ -141,7 +161,12 @@ NOTE: Apply language and content rules only to 'answer' and 'evidence.descriptio
                 if clean_text.endswith("```"):
                     clean_text = clean_text[:-3]
 
-                return json.loads(clean_text.strip())
+                result = json.loads(clean_text.strip())
+
+                if geo_meta1:
+                    result.setdefault("evidence", {})
+                    result["evidence"]["geospatial_metadata"] = geo_meta1
+                return result
 
         except Exception as exc:
             error_text = str(exc)
