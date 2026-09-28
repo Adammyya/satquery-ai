@@ -144,6 +144,9 @@ def execute_workflow(
                 image_bytes,
                 mime_type,
                 image_filename,
+                image2_bytes,
+                mime_type2,
+                image2_filename
             )
 
             task_name = "multimodal_analysis"
